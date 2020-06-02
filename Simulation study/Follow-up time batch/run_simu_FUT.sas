@@ -4,7 +4,7 @@
 
 
 PROC IMPORT OUT= WORK.simdata 
-	            DATAFILE= "E:\1Projects\2018-08 NegBinom FC\Simu Data\Alldata FUT\Simdata_FUT_&ncov._&nbeta._&n..csv" 
+	            DATAFILE= "&githubpath.\PoissonF\Simulation study\Follow-up time batch\Simdata_FUT_&ncov._&nbeta._&n..csv" 
 	            DBMS=CSV REPLACE;
 	     GETNAMES=YES;
 	     DATAROW=2; 
@@ -17,13 +17,21 @@ set simdata;
 logFU=log(FUT);
 run;
 
-* sanity check: analyze all data sets together;
-*%flacpoisson(data=simdata, y=y, varlist=x1 x2, by=, maxiter=50, offset=logFU, print=1, nonotes=0);
-
 data simdata10;
 set simdata;
 if isim<=10000;
 run;
+* sanity check: analyze all data sets together;
+
+ods select none;
+proc genmod data=simdata10;
+ods output parameterestimates=poislrci.POOLED_ML_FUT_&ncov._&nbeta._&n.;
+model y=x1 x2/dist=poisson offset=logFU;
+*by isim;
+run;
+ods select all;
+
+
 
 options nonotes;
 %flacpoisson(data=simdata10, y=y, varlist=x1 x2, by=isim, maxiter=100, offset=logFU, print=0, odsselect=all, nonotes=1);

@@ -6,7 +6,9 @@
 ### Simulation data will be saved in SimDataDir. Please specify the path where you want to save the simulation data.
 
 library("SimulatoR")
-SimDataDir =  "E:/1Projects/2018-08 NegBinom FC/Github/PoissonF/Simulation study/Follow-up time batch/"
+
+githubpath = "E:/1Projects/2018-08 NegBinom FC/Github/"
+SimDataDir =  paste(githubpath,"PoissonF/Simulation study/Follow-up time batch/", sep="")
 
 ################################ Part 1 #######################################
 transforms_pois<-list(v1 = function(z) (as.integer(z[,1] > 1.28)),    # change to Puhr, to achieve balance of 10:90
@@ -59,9 +61,9 @@ write.table(t(c("ncov","Beta1","Intercept")),Interceptfile,sep=",",row.names=FAL
 
 for (ncov in c(2)){
   
-  B1cnt =0 
+  nbeta =0 
   for(Beta1 in c(-log(16),-log(2),0, log(2),log(16))){
-    B1cnt = B1cnt +1
+    nbeta = nbeta +1
     betaV<-numeric(2)
     a<-1   # in Puhr2017, was set to 0, 0.5, 1
     
@@ -102,8 +104,8 @@ for (ncov in c(2)){
       colnames(bigsimdata)<-c("isim", paste("x", 1:ncov, sep=""), "FUT","y")
       file1 = paste(SimDataDir,"Simdata_FUT_",ncov,"_",nbeta,"_",nobs,".csv",sep="")
       #Now simulate with this design, e.g. with n_obs=nobs
-      path1=paste(SimDataDir,"Data_",ncov,"_",round(Beta1,2),"_",nobs,sep="")
-      dir.create(path1)
+#      path1=paste(SimDataDir,"Data_",ncov,"_",round(Beta1,2),"_",nobs,sep="")
+#      dir.create(path1)
       succ=totEvent=RejSim=0
       rejflag<-c()
       while(succ<nsim){

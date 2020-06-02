@@ -138,6 +138,27 @@ ods select none;    * turns off output temporarily for the iterations;
 
 %end;
 
+%if &conv = 0 %then %do;
+	%if &nonotes=1 %then %do; 
+		options notes;             * temporarily turn on notes to put iteration info into log;
+	%end;
+	%if &iterinfo=1 %then %do;
+		%put WARNING: Iterations not converged for &ndata datasets. MAXDBETA: &maxdbeta;  
+	%end;
+	%if &nonotes=1 %then %do;
+		options nonotes;           * turn off again;
+	%end;
+	data _work (drop=_hdiag_);
+	set _work;
+	y_mod = &y + _hdiag_/2;
+	run;
+
+	data _workfinished;
+	set _workfinished _work;
+	run;
+%end;
+
+
 %if &by ne %then %do;
 		proc sort data=_workfinished out=_workfinished;
 		by &by;

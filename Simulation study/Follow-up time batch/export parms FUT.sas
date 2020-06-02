@@ -1,5 +1,7 @@
 %let Githubpath = %str(E:\1Projects\2018-08 NegBinom FC\Github\);
 
+libname poislrci "&githubpath.PoissonF\Simulation study\Follow-up time batch";
+
 %inc "&githubpath.PoissonF\Simulation study\Sas macro\array.sas";
 %inc "&githubpath.PoissonF\Simulation study\Sas macro\do_over.sas";
 
@@ -104,3 +106,44 @@ PROC EXPORT DATA= POISLRCI.summary_&what._FUT
 
 
 %exp_summary(what=Ml);
+
+
+%macro pooled(ncov, epv, nbeta);
+	%let nobs=%sysevalf(&epv*&ncov*10);
+
+	data pooled_&ncov._&nbeta._&nobs;
+	set poislrci.pooled_ml_fut_&ncov._&nbeta._&nobs;
+	ncov=&ncov;
+	nbeta=&nbeta;
+	nobs=&nobs;
+	run;
+
+
+%mend;
+
+%do_over(ncov epv nbeta, macro=pooled); 
+
+data poislrci.pooled_ML_FUT;
+set 
+pooled_2_1_60
+pooled_2_2_60
+pooled_2_3_60
+pooled_2_4_60
+pooled_2_5_60
+pooled_2_1_200
+pooled_2_2_200
+pooled_2_3_200
+pooled_2_4_200
+pooled_2_5_200
+;
+run;
+
+
+
+PROC EXPORT DATA= POISLRCI.pooled_ML_FUT
+				            OUTFILE= "&githubpath.PoissonF\Simulation study\Follow-up time batch\POOLED_ML_FUT.csv" 
+				            DBMS=CSV REPLACE;
+				     PUTNAMES=YES;
+				RUN;
+
+
