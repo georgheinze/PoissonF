@@ -27,4 +27,7 @@ to generate summary statistics like
 bias, MSE, RMSE, RMSE*sqrt(N), lower coverage, upper coverage, power. 
 These will be saved as .sas7bdat as well as summary_<Method>_FUT.csv files.
 
+A pooled (maximum likelihood) analysis of all data sets simultaneously serves to estimate asymptotic bias which could be caused by the restrictions
+imposed in generating the data sets (minimum event rule/minimum frequency of each level of a binary covariate rule).
+The pooled analysis is saved in POOLED_ML_FUT.csv and POOLED_ML_FUT.sas7bdat.
 
