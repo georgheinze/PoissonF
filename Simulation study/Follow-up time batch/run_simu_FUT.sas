@@ -4,7 +4,7 @@
 
 
 PROC IMPORT OUT= WORK.simdata 
-	            DATAFILE= "&githubpath.\PoissonF\Simulation study\Follow-up time batch\Simdata_FUT_&ncov._&nbeta._&n..csv" 
+	            DATAFILE= "&githubpath.\PoissonF\Simulation study\Follow-up time batch\Data\Simdata_FUT_&ncov._&nbeta._&n..csv" 
 	            DBMS=CSV REPLACE;
 	     GETNAMES=YES;
 	     DATAROW=2; 

@@ -1,6 +1,7 @@
 %let Githubpath = %str(E:\1Projects\2018-08 NegBinom FC\Github\);
 
-libname poislrci "&githubpath.PoissonF\Simulation study\Follow-up time batch";
+libname poislrci "&githubpath.PoissonF\Simulation study\Follow-up time batch\Results";
+libname poissum "&githubpath.PoissonF\Simulation study\Follow-up time batch\Summaries";
 
 %inc "&githubpath.PoissonF\Simulation study\Sas macro\array.sas";
 %inc "&githubpath.PoissonF\Simulation study\Sas macro\do_over.sas";
@@ -15,7 +16,7 @@ libname poislrci "&githubpath.PoissonF\Simulation study\Follow-up time batch";
 %macro exp_parms(ncov, nbeta, epv, what);
 	%let n=%sysevalf(&epv*&ncov*10);
 				PROC EXPORT DATA= POISLRCI.&what._fut_&ncov._&nbeta._&n. 
-				            OUTFILE= "&githubpath.PoissonF\Simulation study\Follow-up time batch\&what._FUT_&ncov._&nbeta._&n..csv" 
+				            OUTFILE= "&githubpath.PoissonF\Simulation study\Follow-up time batch\Results\&what._FUT_&ncov._&nbeta._&n..csv" 
 				            DBMS=CSV REPLACE;
 				     PUTNAMES=YES;
 				RUN;
@@ -47,10 +48,10 @@ options mprint mlogic macrogen;
 	run;
 	proc means data=summary_i noprint;
 	var bias MSE lowercover uppercover power;
-	output out=poislrci.summary_&what._FUT_&ncov._&nbeta._&n. mean=bias MSE lowercover uppercover power;
+	output out=poissum.summary_&what._FUT_&ncov._&nbeta._&n. mean=bias MSE lowercover uppercover power;
 	run;
-	data poislrci.summary_&what._FUT_&ncov._&nbeta._&n.;
-	set poislrci.summary_&what._FUT_&ncov._&nbeta._&n.;
+	data poissum.summary_&what._FUT_&ncov._&nbeta._&n.;
+	set poissum.summary_&what._FUT_&ncov._&nbeta._&n.;
 	ncov=&ncov;
 	nbeta=&nbeta;
 	epv=&epv;
@@ -64,23 +65,23 @@ options mprint mlogic macrogen;
 %macro exp_summary(what);
 
 data summary_FUT_2_x_n;
-set   poislrci.summary_&what._FUT_2_1_60 
-poislrci.summary_&what._FUT_2_2_60 
-poislrci.summary_&what._FUT_2_3_60 
-poislrci.summary_&what._FUT_2_4_60 
-poislrci.summary_&what._FUT_2_5_60 
-poislrci.summary_&what._FUT_2_1_200
-poislrci.summary_&what._FUT_2_2_200
-poislrci.summary_&what._FUT_2_3_200
-poislrci.summary_&what._FUT_2_4_200
-poislrci.summary_&what._FUT_2_5_200
+set   poissum.summary_&what._FUT_2_1_60 
+poissum.summary_&what._FUT_2_2_60 
+poissum.summary_&what._FUT_2_3_60 
+poissum.summary_&what._FUT_2_4_60 
+poissum.summary_&what._FUT_2_5_60 
+poissum.summary_&what._FUT_2_1_200
+poissum.summary_&what._FUT_2_2_200
+poissum.summary_&what._FUT_2_3_200
+poissum.summary_&what._FUT_2_4_200
+poissum.summary_&what._FUT_2_5_200
 ;
 run;
 
 
 
 
-data poislrci.summary_&what._FUT;
+data poissum.summary_&what._FUT;
 set summary_FUT_2_x_n;
 RMSE=sqrt(MSE);
 RMSE_SQRTN=RMSE*sqrt(n);
@@ -88,8 +89,8 @@ run;
 
 
 
-PROC EXPORT DATA= POISLRCI.summary_&what._FUT 
-				            OUTFILE= "&githubpath.PoissonF\Simulation study\Follow-up time batch\summary_&what._FUT.csv" 
+PROC EXPORT DATA= poissum.summary_&what._FUT 
+				            OUTFILE= "&githubpath.PoissonF\Simulation study\Follow-up time batch\Summaries\summary_&what._FUT.csv" 
 				            DBMS=CSV REPLACE;
 				     PUTNAMES=YES;
 				RUN;
@@ -123,7 +124,7 @@ PROC EXPORT DATA= POISLRCI.summary_&what._FUT
 
 %do_over(ncov epv nbeta, macro=pooled); 
 
-data poislrci.pooled_ML_FUT;
+data poissum.pooled_ML_FUT;
 set 
 pooled_2_1_60
 pooled_2_2_60
@@ -140,8 +141,8 @@ run;
 
 
 
-PROC EXPORT DATA= POISLRCI.pooled_ML_FUT
-				            OUTFILE= "&githubpath.PoissonF\Simulation study\Follow-up time batch\POOLED_ML_FUT.csv" 
+PROC EXPORT DATA= poissum.pooled_ML_FUT
+				            OUTFILE= "&githubpath.PoissonF\Simulation study\Follow-up time batch\Summaries\POOLED_ML_FUT.csv" 
 				            DBMS=CSV REPLACE;
 				     PUTNAMES=YES;
 				RUN;

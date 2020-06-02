@@ -8,7 +8,7 @@
 library("SimulatoR")
 
 githubpath = "E:/1Projects/2018-08 NegBinom FC/Github/"
-SimDataDir =  paste(githubpath,"PoissonF/Simulation study/Follow-up time batch/", sep="")
+SimDataDir =  paste(githubpath,"PoissonF/Simulation study/Follow-up time batch/Data/", sep="")
 
 ################################ Part 1 #######################################
 transforms_pois<-list(v1 = function(z) (as.integer(z[,1] > 1.28)),    # change to Puhr, to achieve balance of 10:90

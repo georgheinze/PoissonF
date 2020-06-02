@@ -3,7 +3,7 @@
 
 %include "&githubpath.PoissonF\Simulation study\Sas macro\flacpoisson.sas";
 
-libname poislrci "&githubpath.PoissonF\Simulation study\Follow-up time batch";
+libname poislrci "&githubpath.PoissonF\Simulation study\Follow-up time batch\Results";
 
 
 %let ncov=2;
