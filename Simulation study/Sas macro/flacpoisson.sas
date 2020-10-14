@@ -1,9 +1,10 @@
 %macro flacpoisson(data=, varlist=, y=, maxiter=15, dist=poisson, outmodelfirth=_FIRTHMODEL, outmodelFLAC=_FLACMODEL, betastart=, offset=, Xconv=0.0001, by=, print=1, nonotes=0, iterinfo=1, pl=1,
-iterhist=_iterhist, finalparms=_finalparms, odsselect=all);
+iterhist=_iterhist, finalparms=_finalparms, odsselect=all, deletework=1, keep=);
 
 * by: by-processing variable (e.g. for simulation). must not be missing (.).
 * odsselect: none= suppresses all output and leaves ods select none on exit,   all= sets ods select all on exit;
 * nonotes: 1 if options nonotes is active, 0 else (to ensure nonotes is activated on exit);
+* keep: any extra variables that should be carried over to the data set with predictions;
 
 %let iter=1;
 %let conv=0;
@@ -103,7 +104,7 @@ ods select none;    * turns off output temporarily for the iterations;
 			merge _work _convcheck;
 			by &by;
 			run;
-			data _finished _work(keep=&by &varlist &y &offset _hdiag_);
+			data _finished _work(keep=&by &varlist &keep &y &offset _hdiag_);
 			set _finished;
 			if _dbeta_<&xconv then output _finished;
 			else output _work;
@@ -205,13 +206,18 @@ title3 "Firth model";
 model y_mod = &varlist  /dist=&dist 
 	%if &pl=1 %then %do; lrci %end;
 	%if &offset ne %then %do; offset=&offset %end; ;
-output out=_workfinished h=_hdiag2_;
+output out=_workfinished h=_hdiag2_ Predicted=_FIRTHPred;
 %if &by ne %then %do; by &by; %end;
+run;
+
+data _FIRTHPredictions;
+set _workfinished;
 run;
 
 
 data _workfinished;
 set _workfinished;
+drop _FIRTHPred;
 _added_covariate_=0;
 output;
 &y = _hdiag2_/2;
@@ -225,8 +231,19 @@ title3 "FLAC model";
 model &y = &varlist _added_covariate_ /dist=&dist 
 	%if &pl=1 %then %do; lrci %end;
 	%if &offset ne %then %do; offset=&offset %end; ;
+output out=_FLACPredictions Predicted=_FLACPred;
 %if &by ne %then %do; by &by; %end;
 run;
+
+data _FLACPredictions;
+set _FLACPredictions;
+if _added_covariate_=0;
+run;
+
+%if &deletework = 1 %then %do;
+	data _workfinished;
+	run;
+%end;
 
 title3;
 
