@@ -6,20 +6,39 @@ output:
   word_document: default
   html_document:
     df_print: paged
+params: 
+  save.plot: false
 ---
 
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
+col <- c("#4E84C4", "#E7B800", "#FC4E07", "#52854C","#C3D7A4","#F4EDCA","#C4961A","#D16103", "#FFDB6D",   "#293352", "#00AFBB")
+
+knitr::opts_chunk$set(out.height = "\\textheight",  out.width = "\\textwidth")
 ```
+
+```{r libs, include=F}
+library(looplot)
+library(readr)
+library(latex2exp)
+library(readr)
+library(magrittr)
+```
+
+
+<!-- TODO: 
+* labels in p.lxpmle_tab_plot
+
+-->
+
 
 ## Preparations
 
 ```{r}
-library(readr)
-PoissonFResultsTable <- read_delim("~/1Projects/2018-08 NegBinom FC/Github/PoissonF/Simulation study/Follow-up time batch/Summaries/PoissonFResultsTable.csv", 
+PoissonFResultsTable <- read_delim("PoissonFResultsTable.csv", 
     ";", escape_double = FALSE, trim_ws = TRUE)
-PoissonF_sep_nonconv <- read_delim("~/1Projects/2018-08 NegBinom FC/Github/PoissonF/Simulation study/Follow-up time batch/Summaries/PoissonF_sep_nonconv.csv", 
+PoissonF_sep_nonconv <- read_delim("PoissonF_sep_nonconv.csv", 
     ";", escape_double = FALSE, trim_ws = TRUE)
 ```
 
@@ -173,7 +192,6 @@ This table shows by scenario the percentage of data sets with separation caused 
 Sep_tab
 ```
 
-
 #### Unavailability of exact estimates
 
 This table shows by scenario the percentage of data sets with exact estimates being totally unavailable, and of median unbiased estimates (MUE) replacing the maximum likelihood estimate.
@@ -182,6 +200,50 @@ This table shows by scenario the percentage of data sets with exact estimates be
 Exact_tab[!is.na(Exact_tab[,5]),]
 ```
 
+```{r sep.plot, message=F}
+Sep_tab1.plot <-show_tab(methods="ML", stat="separation1", multi=100, dattable=PoissonF_sep_nonconv)
+MUE_tab1.plot <-show_tab(methods="Exact", stat="MUE1", multi=100, dattable=PoissonF_sep_nonconv) 
+
+sep_tab.plot <- merge(Sep_tab1.plot, MUE_tab1.plot) %>% data.frame() %>% select(-epv)
+
+labs <- list(ncov=c('2'="k=2", '5'="k=5", "10"="k=10"))
+
+p.sep <- nested_loop_plot(resdf = sep_tab.plot,
+                          x = "beta1", steps = "n",
+                          grid_rows = "ncov",
+                          colors=col,
+                          hline_intercept = 0,
+                          steps_values_annotate = TRUE,
+                          steps_y_base = -10,
+                          steps_annotation_size=3.5,
+                          replace_labels = labs,
+                          na_rm=T,
+                          sizes=1,
+                          y_name = "Relative Frequency (x 100)",
+                          x_name = TeX("$\\beta_1$"),
+                          design_type = "partial",
+                                 post_processing = list(
+                                   add_custom_theme = list(
+                                     axis.text.x = element_text(angle = -90, 
+                                                                vjust = 0.5, 
+                                                                size = 10), 
+                                     strip.background = element_rect(color="black",
+                                                                     fill = "#FFFFFF",
+                                                                     size=0.3, 
+                                                                     linetype="blank"), 
+                                     panel.border = element_blank(),
+                                     legend.position = "bottom"
+                                   )
+                                 ))
+p.sep <- p.sep + guides(size=F)
+p.sep
+```
+
+```{r}
+if(params$save.plot) {
+  ggsave("sep.tiff", plot = p.sep, width=7, height=7,dpi = 600)
+} 
+```
 
 #### Unavailability of PROC LOGXACT estimates of Firth-corrected estimates
 
@@ -189,11 +251,101 @@ This table shows the percentage of data sets with problems with the PMLE estimat
 
 ```{r}
 LXPMLE_tab[!is.na(LXPMLE_tab[,5]),c(1:4,5,7,8)]
-
-LXPMLE_tab[!is.na(LXPMLE_tab[,5]),c(1:4,6,9,10)]
-
 ```
 
+```{r lxpme1.plot, message=F}
+LXPMLE_NA_tab1.plot <-show_tab(methods="LXPMLE", stat="BetaNA1", multi=100, dattable=PoissonF_sep_nonconv)
+LXPMLE_NA_tab2.plot <-show_tab(methods="LXPMLE", stat="BetaNA2", multi=100, dattable=PoissonF_sep_nonconv)
+
+LXPMLE_NoLowerCI1_tab.plot <-show_tab(methods="LXPMLE", stat="noLowerCI1", multi=100, dattable=PoissonF_sep_nonconv)
+LXPMLE_NoUpperCI1_tab.plot <-show_tab(methods="LXPMLE", stat="NoUpperCI1", multi=100, dattable=PoissonF_sep_nonconv)
+LXPMLE_NoLowerCI2_tab.plot <-show_tab(methods="LXPMLE", stat="NoLowerCI2", multi=100, dattable=PoissonF_sep_nonconv)
+LXPMLE_NoUpperCI2_tab.plot <-show_tab(methods="LXPMLE", stat="NoUpperCI2", multi=100, dattable=PoissonF_sep_nonconv)
+
+LXPMLE_tab.plot<-cbind(LXPMLE_NA_tab1.plot[,1:4], Beta1_na=LXPMLE_NA_tab1.plot[,5], Beta2_na=LXPMLE_NA_tab2.plot[,5], 
+                  LowerCI1_na=LXPMLE_NoLowerCI1_tab.plot[,5], UpperCI1_na=LXPMLE_NoUpperCI1_tab.plot[,5],
+                  LowerCI2_na=LXPMLE_NoLowerCI2_tab.plot[,5], UpperCI2_na=LXPMLE_NoUpperCI2_tab.plot[,5]) %>% data.frame()
+
+p.lxpmle1 <- nested_loop_plot(resdf = LXPMLE_tab.plot[,c("ncov", "n","beta1", "Beta1_na", "LowerCI1_na", "UpperCI1_na")],
+                          x = "beta1", steps = "n",
+                          grid_rows = "ncov",
+                          colors=col,
+                          hline_intercept = 0,
+                          steps_values_annotate = TRUE,
+                          steps_y_base = -10,
+                          steps_annotation_size=3.5,
+                          replace_labels = labs,
+                          na_rm=T,
+                          sizes=1,
+                          y_name = "Relative Frequency (x 100)",
+                          x_name = TeX("$\\beta_1$"),
+                          design_type = "partial",
+                                 post_processing = list(
+                                   add_custom_theme = list(
+                                     axis.text.x = element_text(angle = -90, 
+                                                                vjust = 0.5, 
+                                                                size = 10), 
+                                     strip.background = element_rect(color="black",
+                                                                     fill = "#FFFFFF",
+                                                                     size=0.3, 
+                                                                     linetype="blank"), 
+                                     panel.border = element_blank(),
+                                     legend.position = "bottom"
+                                   )
+                                 ))
+p.lxpmle1 <- p.lxpmle1 + guides(size=F)
+p.lxpmle1
+```
+
+```{r}
+if(params$save.plot) {
+  ggsave("lxpmle1.tiff", plot = p.lxpmle1, width=7, height=7,dpi = 600)
+} 
+```
+
+
+```{r}
+LXPMLE_tab[!is.na(LXPMLE_tab[,5]),c(1:4,6,9,10)]
+```
+
+
+```{r plot.lxpmle2, message=F}
+p.lxpmle2 <- nested_loop_plot(resdf = LXPMLE_tab.plot[,c("ncov", "n","beta1", "Beta2_na", "LowerCI2_na", "UpperCI2_na")],
+                          x = "beta1", steps = "n",
+                          grid_rows = "ncov",
+                          colors=col,
+                          hline_intercept = 0,
+                          steps_values_annotate = TRUE,
+                          steps_y_base = -10,
+                          steps_annotation_size=3.5,
+                          replace_labels = labs,
+                          na_rm=T,
+                          sizes=1,
+                          y_name = "Relative Frequency (x 100)",
+                          x_name = TeX("$\\beta_1$"),
+                          design_type = "partial",
+                                 post_processing = list(
+                                   add_custom_theme = list(
+                                     axis.text.x = element_text(angle = -90, 
+                                                                vjust = 0.5, 
+                                                                size = 10), 
+                                     strip.background = element_rect(color="black",
+                                                                     fill = "#FFFFFF",
+                                                                     size=0.3, 
+                                                                     linetype="blank"), 
+                                     panel.border = element_blank(),
+                                     legend.position = "bottom"
+                                   )
+                                 ))
+p.lxpmle2 <- p.lxpmle2 + guides(size=F)
+p.lxpmle2
+```
+
+```{r}
+if(params$save.plot) {
+  ggsave("lxpmle2.tiff", plot = p.lxpmle2, width=7, height=7,dpi = 600)
+} 
+```
 
 #### Prediction error
 
@@ -204,6 +356,64 @@ Here we present the root mean squared prediction error times sample size, comput
 RMSPEN_tab
 ```
 
+```{r rmspen.plot}
+RMSPEN_tab<-show_tab(methods=c("ML","Firth","FLAC","DatAug"), stat="rmspen", multi=100) %>% data.frame()
+labs <- list(ncov=c('2'="k=2", '5'="k=5", "10"="k=10"))
+names(RMSPEN_tab)[5:8] <- c("ML", "FL", "FLAC","DAP")
+
+
+plot_data <- nested_loop_base_data(
+    resdf = RMSPEN_tab[,-2],
+    x = "beta1", steps = c("n"),
+    replace_labels = labs,
+    grid_rows = "ncov", 
+    design_type = "partial"
+    ) %>% 
+        nested_loop_paramsteps_data(
+            steps_y_base = 40,
+            steps_y_height = 5
+        )
+plot_data$stepdf %<>% 
+    mutate(
+        y_coord = ifelse(facet == 3, y_coord + 100, y_coord)
+    )
+
+p.predacc <- nested_loop_base_plot(
+    y_name = TeX("$RMSE(\\mu) \\times \\sqrt{n}$"),
+    x_name = TeX("$\\beta_1$"),
+    plot_data,
+    colors = col, 
+    grid_scales = "free_y"
+) %>% 
+    nested_loop_paramsteps_plot(
+        plot_data, 
+        steps_values_annotate = TRUE,
+        steps_names_annotate = F, 
+        steps_annotation_size = 3.5
+    ) %>% 
+    add_processing(
+        list(
+            add_custom_theme = list(
+                axis.text.x = element_text(angle = -90,
+                                           vjust = 0.5,
+                                           size = 10),
+                strip.background = element_rect(color="black",
+                                                fill = "#FFFFFF",
+                                                size=0.3,
+                                                linetype="blank"),
+                panel.border = element_blank(),
+                legend.position = "bottom"
+            )
+        )
+    )
+p.predacc
+```
+
+```{r}
+if(params$save.plot) {
+  ggsave("predacc.tiff", plot = p.predacc, width=7, height=7,dpi = 600)
+} 
+```
 
 #### Bias
 
@@ -215,10 +425,166 @@ The following two tables show the estimated bias for the regression coefficients
 BIAS1_tab
 ```
 
+```{r}
+BIAS1_tab<-show_tab(methods=c("ML", "Firth", "LXPMLE", "DatAug", "Exact"), stat="bias1", multi=100)
+
+bias1.plot <- merge(BIAS1_tab, Sep_tab) %>% 
+  mutate(ML = ifelse(Sep_caused_beta1 <= 5, ML, NA)) %>%  #ML only when separation rate under 5% 
+  select(-epv, -Sep_caused_beta2, -Sep_caused_beta1)
+
+p.bias1 <- nested_loop_plot(resdf = bias1.plot[,-6],
+                            x = "beta1", steps = c("n"),
+                            grid_rows = "ncov",
+                            colors=col,
+                            steps_values_annotate = TRUE,
+                            steps_annotation_size=3.5,
+                            replace_labels = labs,
+                            grid_scales = "free_y",
+                            y_name = TeX("$Bias(\\beta_1)$"),
+                            x_name = TeX("$\\beta_1$"),
+                            design_type = "partial",  
+                            post_processing = list(
+                              add_custom_theme = list(
+                                axis.text.x = element_text(angle = -90, 
+                                                           vjust = 0.5, 
+                                                           size = 10), 
+                                strip.background = element_rect(color="black",
+                                                                fill = "#FFFFFF",
+                                                                size=0.3, 
+                                                                linetype="blank"), 
+                                panel.border = element_blank(), 
+                                legend.position = "bottom"
+                              )
+                            )
+)
+p.bias1 <- p.bias1 + guides(size=F)
+p.bias1
+```
+
+```{r}
+if(params$save.plot) {
+  ggsave("bias1_main.tiff", plot = p.bias1, width=7, height=7,dpi = 600)
+} 
+```
+
+```{r}
+p.bias1.extra <- nested_loop_plot(resdf = bias1.plot[,c(1,2,3,5,6)],
+                            x = "beta1", steps = c("n"),
+                            grid_rows = "ncov",
+                            colors=col,
+                            steps_values_annotate = TRUE,
+                            steps_annotation_size=3.5,
+                            replace_labels = labs,
+                            grid_scales = "free_y",
+                            y_name = TeX("$Bias(\\beta_1)$"),
+                            x_name = TeX("$\\beta_1$"),
+                            design_type = "partial",  
+                            post_processing = list(
+                              add_custom_theme = list(
+                                axis.text.x = element_text(angle = -90, 
+                                                           vjust = 0.5, 
+                                                           size = 10), 
+                                strip.background = element_rect(color="black",
+                                                                fill = "#FFFFFF",
+                                                                size=0.3, 
+                                                                linetype="blank"), 
+                                panel.border = element_blank(), 
+                                legend.position = "bottom"
+                              )
+                            )
+)
+p.bias1.extra <- p.bias1.extra + guides(size=F)
+p.bias1.extra
+```
+
+```{r}
+if(params$save.plot) {
+  ggsave("bias1_extra.tiff", plot = p.bias1.extra, width=7, height=7,dpi = 600)
+} 
+```
+
 ##### Bias of $\hat\beta_2$
 
 ```{r}
 BIAS2_tab
+```
+
+```{r}
+BIAS2_tab<-show_tab(methods=c("ML", "Firth", "LXPMLE", "DatAug", "Exact"), stat="bias2", multi=100)
+
+bias2.plot <- merge(BIAS2_tab, Sep_tab) %>% 
+  mutate(ML = ifelse(Sep_caused_beta2 <= 5, ML, NA)) %>%  #ML only when separation rate under 5% 
+  select(-epv, -Sep_caused_beta2, -Sep_caused_beta1)
+
+p.bias2 <- nested_loop_plot(resdf = bias2.plot[,-6],
+                            x = "beta1", steps = c("n"),
+                            grid_rows = "ncov",
+                            colors=col,
+                            steps_values_annotate = TRUE,
+                            steps_annotation_size=3.5,
+                            replace_labels = labs,
+                            grid_scales = "free_y",
+                            y_name = TeX("$Bias(\\beta_2)$"),
+                            x_name = TeX("$\\beta_1$"),
+                            design_type = "partial",  
+                            post_processing = list(
+                              add_custom_theme = list(
+                                axis.text.x = element_text(angle = -90, 
+                                                           vjust = 0.5, 
+                                                           size = 10), 
+                                strip.background = element_rect(color="black",
+                                                                fill = "#FFFFFF",
+                                                                size=0.3, 
+                                                                linetype="blank"), 
+                                panel.border = element_blank(), 
+                                legend.position = "bottom"
+                              )
+                            )
+)
+p.bias2 <- p.bias2 + guides(size=F)
+p.bias2
+```
+
+```{r}
+if(params$save.plot) {
+  ggsave("bias2_main.tiff", plot = p.bias2, width=7, height=7,dpi = 600)
+} 
+```
+
+```{r}
+p.bias2.extra <- nested_loop_plot(resdf = bias2.plot[,c(1,2,3,5,6)],
+                            x = "beta1", steps = c("n"),
+                            grid_rows = "ncov",
+                            colors=col,
+                            steps_values_annotate = TRUE,
+                            steps_annotation_size=3.5,
+                            replace_labels = labs,
+                            grid_scales = "free_y",
+                            y_name = TeX("$Bias(\\beta_2)$"),
+                            x_name = TeX("$\\beta_1$"),
+                            design_type = "partial",  
+                            post_processing = list(
+                              add_custom_theme = list(
+                                axis.text.x = element_text(angle = -90, 
+                                                           vjust = 0.5, 
+                                                           size = 10), 
+                                strip.background = element_rect(color="black",
+                                                                fill = "#FFFFFF",
+                                                                size=0.3, 
+                                                                linetype="blank"), 
+                                panel.border = element_blank(), 
+                                legend.position = "bottom"
+                              )
+                            )
+)
+p.bias2.extra <- p.bias2.extra + guides(size=F)
+p.bias2.extra
+```
+
+```{r}
+if(params$save.plot) {
+  ggsave("bias2_extra.tiff", plot = p.bias2.extra, width=7, height=7,dpi = 600)
+} 
 ```
 
 
