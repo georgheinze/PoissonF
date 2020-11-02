@@ -785,6 +785,7 @@ p.rmse2 <- nested_loop_base_plot(
 p.rmse2 <- p.rmse2 + guides(size=F)
 p.rmse2
 ```
+
 ```{r}
 if(params$save.plot) {
   ggsave("rmse2.tiff", plot = p.rmse1, width=7, height=7,dpi = 600)
@@ -804,7 +805,7 @@ p.rmse2.extra <- nested_loop_plot(resdf = rmse1.plot[,c(1,2,3,5,6)],
                             grid_scales = "free_y",
                             y_name = TeX("$RMSE(\\beta_2) \\times n$"),
                             x_name = TeX("$\\beta_1$"),
-                            design_type = "partial",  
+                            design_type = "par  tial",  
                             post_processing = list(
                               add_custom_theme = list(
                                 axis.text.x = element_text(angle = -90, 
@@ -834,33 +835,129 @@ if(params$save.plot) {
 
 ##### Left/right-tailed coverage of confidence intervals for $\beta_1$
 
-To improve readability, we multiplied coverage probabilities by 1000 and subtracted the target value of 975 for one-tailed coverage. Negative values indicate undercoverage per 1,000 studies, positive values indicate overcoverage per 1,000 studies. Perfect coverage is given by 0. 
+To improve readability, we multiplied coverage probabilities by 1000 and subtracted the target value of 975 for one-tailed coverage. Negative values indicate undercoverage per 1,000 studies, positive values indicate overcoverage per 1,000 studies. Perfect coverage is given by 0. +
+
+In the following plots all values below a threshold of 0.9 are not shown. 
 
 ```{r}
 data.frame(leftcov1_tab[,c(1,3,4)], lrcov1_tab)
 ```
 
 ```{r}
-leftcov1_tab<-show_tab(methods=c("ML","Firth","LXPMLE","DatAug","Exact","Mid-P"), stat="leftcov1")
-rightcov1_tab<-show_tab(methods=c("ML","Firth","LXPMLE","DatAug","Exact","Mid-P"), stat="rightcov1")
-colnames(leftcov1_tab) <- c(colnames(leftcov1_tab)[1:4],paste0("left_",colnames(leftcov1_tab)[5:10]))
-colnames(rightcov1_tab) <- c(colnames(rightcov1_tab)[1:4],paste0("right_",colnames(rightcov1_tab)[5:10]))
-cov1_tab <- cbind(leftcov1_tab, rightcov1_tab[,5:10]) %>% data.frame()
+min.all <- 0.90
+mirror <- function(x, mid=min.all) {
+  lower <- mid-(1-mid)
+  range <- 1-lower
+  y <- lower+1-x
+  return(y)
+}
 
-nested_loop_plot(
-    cov1_tab[,-c(2,7,13)], x = "beta1", grid_rows = "ncov", steps = "n", 
-    colors = col,
-    legend_breaks = c("left_ML", "left_Firth", "left_DatAug", "left_Exact", "left_Mid-P"),
-    legend_labels = c("ML", "Firth", "DatAug", "Exact", "Mid-P"),
-    steps_y_base = 0.81, steps_y_height = 0.01, 
+leftcov1_tab<-show_tab(methods=c("ML","Firth","DatAug","Exact","Mid-P"), stat="leftcov1") %>% data.frame() %>% 
+  mutate(ML = ifelse(ML < 0.90, NA, ML))
+leftcov1_tab %<>% mutate(across(c(ML, Firth, DatAug,Exact,Mid.P), ~mirror(.x)))
+rightcov1_tab<-show_tab(methods=c("ML","Firth","DatAug","Exact","Mid-P"), stat="rightcov1") %>% data.frame() %>% 
+  mutate(ML = ifelse(ML < 0.90, NA, ML))
+colnames(leftcov1_tab) <- c(colnames(leftcov1_tab)[1:4],paste0("left_",colnames(leftcov1_tab)[5:9]))
+colnames(rightcov1_tab) <- c(colnames(rightcov1_tab)[1:4],paste0("right_",colnames(rightcov1_tab)[5:9]))
+cov1.plot <- cbind(leftcov1_tab, rightcov1_tab[,5:9]) %>% select(-epv)
+
+y.breaks <- sort(c(min.all,seq(1-2*(1-min.all),1,0.025)))
+
+y.labs <- c(sort(y.breaks[which(y.breaks==min.all):length(y.breaks)], decreasing = T), y.breaks[(which(y.breaks==min.all)+1):length(y.breaks)])
+y.labs <- y.labs[-3]
+
+p.coverage1 <- nested_loop_plot(
+    cov1.plot, x = "beta1", grid_rows = "ncov", steps = "n", 
+    colors = col[1:5],
+    replace_labels = labs,
+    legend_breaks = c("left_ML", "left_Firth", "left_DatAug", "left_Exact", "left_Mid.P"),
+    legend_labels = c("ML", "FL", "DAP", "XL", "Mid-P"),
+    steps_y_base = min.all - 0.1, steps_y_height = 0.005, 
     steps_values_annotate = TRUE, 
+    x_name = TeX("$\\beta_1$"),
     steps_annotation_size = 3,
-    design_type = 'partial',
     y_name = "Coverage",
-    y_breaks = c(0.825, 0.85, 0.875, 0.925, 0.95, 0.975)
+    y_breaks=y.breaks,
+    y_labels=y.labs,
+    design_type = 'partial',
+    post_processing = list(
+        add_custom_theme = list(axis.text.x = element_text(angle = -90, 
+                                                           vjust = 0.5, 
+                                                           size = 10), 
+                                strip.background = element_rect(color="black",
+                                                                fill = "#FFFFFF",
+                                                                size=0.3, 
+                                                                linetype="blank"), 
+                                panel.border = element_blank(), 
+                                legend.position = "bottom"),
+        add_abline = list(intercept = mirror(0.975), slope = 0, linetype = "dashed"),
+        add_abline = list(intercept = 0.975, slope = 0, linetype = "dashed"), 
+        add_abline = list(intercept = min.all, slope = 0, linetype = "dotted")
+    )
 )
+p.coverage1
 ```
 
+```{r}
+if(params$save.plot) {
+  ggsave("coverage1.tiff", plot = p.coverage1, width=7, height=9,dpi = 600)
+} 
+```
+
+```{r}
+min.all <- 0.9
+
+leftcov1_tab<-show_tab(methods=c("LXPMLE","Firth"), stat="leftcov1") %>% data.frame() %>% 
+  mutate(LXPMLE = ifelse(LXPMLE < 0.90, NA, LXPMLE))
+leftcov1_tab %<>% mutate(across(c(LXPMLE, Firth), ~mirror(.x)))
+rightcov1_tab<-show_tab(methods=c("LXPMLE","Firth"), stat="rightcov1") %>% data.frame() %>% 
+  mutate(LXPMLE = ifelse(LXPMLE < 0.90, NA, LXPMLE))
+colnames(leftcov1_tab) <- c(colnames(leftcov1_tab)[1:4],paste0("left_",colnames(leftcov1_tab)[5:6]))
+colnames(rightcov1_tab) <- c(colnames(rightcov1_tab)[1:4],paste0("right_",colnames(rightcov1_tab)[5:6]))
+cov1.plot <- cbind(leftcov1_tab, rightcov1_tab[,5:6]) %>% select(-epv)
+
+y.breaks <- sort(c(min.all,seq(1-2*(1-min.all),1,0.05)))
+
+y.labs <- c(sort(y.breaks[which(y.breaks==min.all):length(y.breaks)], decreasing = T), y.breaks[(which(y.breaks==min.all)+1):length(y.breaks)])
+y.labs <- y.labs[-3]
+
+p.coverage1.extra <- nested_loop_plot(
+    cov1.plot, x = "beta1", grid_rows = "ncov", steps = "n", 
+    colors = col[1:2],
+    replace_labels = labs,
+    legend_breaks = c("left_LXPMLE", "left_Firth"),
+    legend_labels = c("LXPMLE", "FL"),
+    steps_y_base = min.all - 0.1, steps_y_height = 0.005, 
+    steps_values_annotate = TRUE, 
+    x_name = TeX("$\\beta_1$"),
+    steps_annotation_size = 3,
+    y_name = "Coverage",
+    y_breaks=y.breaks,
+    y_labels=y.labs,
+    design_type = 'partial',
+    post_processing = list(
+        add_custom_theme = list(axis.text.x = element_text(angle = -90, 
+                                                           vjust = 0.5, 
+                                                           size = 10), 
+                                strip.background = element_rect(color="black",
+                                                                fill = "#FFFFFF",
+                                                                size=0.3, 
+                                                                linetype="blank"), 
+                                panel.border = element_blank(), 
+                                legend.position = "bottom"),
+        add_abline = list(intercept = mirror(0.975), slope = 0, linetype = "dashed"),
+        add_abline = list(intercept = 0.975, slope = 0, linetype = "dashed"), 
+        add_abline = list(intercept = min.all, slope = 0, linetype = "dotted")
+    )
+)
+p.coverage1.extra
+```
+
+```{r}
+if(params$save.plot) {
+  ggsave("coverage1_extra.tiff", plot = p.coverage1.extra, width=7, height=9,dpi = 600)
+} 
+```
 
 ##### Left/right-tailed coverage of confidence intervals for $\beta_2$
 
@@ -869,14 +966,114 @@ data.frame(leftcov2_tab[,c(1,3,4)], lrcov2_tab)
 ```
 
 ```{r}
-leftcov2_tab<-show_tab(methods=c("ML","Firth","LXPMLE","DatAug","Exact","Mid-P"), stat="leftcov2", multi=1000)
-rightcov2_tab<-show_tab(methods=c("ML","Firth","LXPMLE","DatAug","Exact","Mid-P"), stat="rightcov2", multi=1000)
+min.all <- 0.90
 
-lrcov2_tab<-matrix(NA,81,ncol(leftcov2_tab)-4)
-colnames(lrcov2_tab)<-colnames(leftcov2_tab[,-c(1:4)])
-for(i in 1:ncol(lrcov2_tab)) lrcov2_tab[,i]<-paste(leftcov2_tab[,4+i]-975, rightcov2_tab[,4+i]-975, sep="/")
+leftcov2_tab<-show_tab(methods=c("ML","Firth","DatAug","Exact","Mid-P"), stat="leftcov2") %>% data.frame() %>% 
+  mutate(ML = ifelse(ML < 0.90, NA, ML))
+leftcov2_tab %<>% mutate(across(c(ML, Firth, DatAug,Exact,Mid.P), ~mirror(.x)))
+rightcov2_tab<-show_tab(methods=c("ML","Firth","DatAug","Exact","Mid-P"), stat="rightcov2") %>% data.frame() %>% 
+  mutate(ML = ifelse(ML < 0.90, NA, ML))
+colnames(leftcov2_tab) <- c(colnames(leftcov2_tab)[1:4],paste0("left_",colnames(leftcov2_tab)[5:9]))
+colnames(rightcov2_tab) <- c(colnames(rightcov2_tab)[1:4],paste0("right_",colnames(rightcov2_tab)[5:9]))
+cov2.plot <- cbind(leftcov2_tab, rightcov2_tab[,5:9]) %>% select(-epv)
+
+y.breaks <- sort(c(min.all,seq(1-2*(1-min.all),1,0.025)))
+
+y.labs <- c(sort(y.breaks[which(y.breaks==min.all):length(y.breaks)], decreasing = T), y.breaks[(which(y.breaks==min.all)+1):length(y.breaks)])
+y.labs <- y.labs[-3]
+
+p.coverage2 <- nested_loop_plot(
+    cov2.plot, x = "beta1", grid_rows = "ncov", steps = "n", 
+    colors = col[1:5],
+    replace_labels = labs,
+    legend_breaks = c("left_ML", "left_Firth", "left_DatAug", "left_Exact", "left_Mid.P"),
+    legend_labels = c("ML", "FL", "DAP", "XL", "Mid-P"),
+    steps_y_base = min.all - 0.1, steps_y_height = 0.005, 
+    steps_values_annotate = TRUE, 
+    x_name = TeX("$\\beta_1$"),
+    steps_annotation_size = 3,
+    y_name = "Coverage",
+    y_breaks=y.breaks,
+    y_labels=y.labs,
+    design_type = 'partial',
+    post_processing = list(
+        add_custom_theme = list(axis.text.x = element_text(angle = -90, 
+                                                           vjust = 0.5, 
+                                                           size = 10), 
+                                strip.background = element_rect(color="black",
+                                                                fill = "#FFFFFF",
+                                                                size=0.3, 
+                                                                linetype="blank"), 
+                                panel.border = element_blank(), 
+                                legend.position = "bottom"),
+        add_abline = list(intercept = mirror(0.975), slope = 0, linetype = "dashed"),
+        add_abline = list(intercept = 0.975, slope = 0, linetype = "dashed"), 
+        add_abline = list(intercept = min.all, slope = 0, linetype = "dotted")
+    )
+)
+p.coverage2
 ```
 
+```{r}
+if(params$save.plot) {
+  ggsave("coverage2.tiff", plot = p.coverage2, width=7, height=9,dpi = 600)
+} 
+```
+
+```{r}
+min.all <- 0.9
+
+leftcov2_tab<-show_tab(methods=c("LXPMLE","Firth"), stat="leftcov1") %>% data.frame() %>% 
+  mutate(LXPMLE = ifelse(LXPMLE < 0.90, NA, LXPMLE))
+leftcov2_tab %<>% mutate(across(c(LXPMLE, Firth), ~mirror(.x)))
+rightcov2_tab<-show_tab(methods=c("LXPMLE","Firth"), stat="rightcov1") %>% data.frame() %>% 
+  mutate(LXPMLE = ifelse(LXPMLE < 0.90, NA, LXPMLE))
+colnames(leftcov2_tab) <- c(colnames(leftcov2_tab)[1:4],paste0("left_",colnames(leftcov2_tab)[5:6]))
+colnames(rightcov2_tab) <- c(colnames(rightcov2_tab)[1:4],paste0("right_",colnames(rightcov2_tab)[5:6]))
+cov2.plot <- cbind(leftcov2_tab, rightcov2_tab[,5:6]) %>% select(-epv)
+
+y.breaks <- sort(c(min.all,seq(1-2*(1-min.all),1,0.025)))
+
+y.labs <- c(sort(y.breaks[which(y.breaks==min.all):length(y.breaks)], decreasing = T), y.breaks[(which(y.breaks==min.all)+1):length(y.breaks)])
+y.labs <- y.labs[-3]
+
+p.coverage2.extra <- nested_loop_plot(
+    cov2.plot, x = "beta1", grid_rows = "ncov", steps = "n", 
+    colors = col[1:2],
+    replace_labels = labs,
+    legend_breaks = c("left_LXPMLE", "left_Firth"),
+    legend_labels = c("LXPMLE", "FL"),
+    steps_y_base = min.all - 0.1, steps_y_height = 0.005, 
+    steps_values_annotate = TRUE, 
+    x_name = TeX("$\\beta_1$"),
+    steps_annotation_size = 3,
+    y_name = "Coverage",
+    y_breaks=y.breaks,
+    y_labels=y.labs,
+    design_type = 'partial',
+    post_processing = list(
+        add_custom_theme = list(axis.text.x = element_text(angle = -90, 
+                                                           vjust = 0.5, 
+                                                           size = 10), 
+                                strip.background = element_rect(color="black",
+                                                                fill = "#FFFFFF",
+                                                                size=0.3, 
+                                                                linetype="blank"), 
+                                panel.border = element_blank(), 
+                                legend.position = "bottom"),
+        add_abline = list(intercept = mirror(0.975), slope = 0, linetype = "dashed"),
+        add_abline = list(intercept = 0.975, slope = 0, linetype = "dashed"), 
+        add_abline = list(intercept = min.all, slope = 0, linetype = "dotted")
+    )
+)
+p.coverage2.extra
+```
+
+```{r}
+if(params$save.plot) {
+  ggsave("coverage2_extra.tiff", plot = p.coverage2.extra, width=7, height=9,dpi = 600)
+} 
+```
 
 #### Power
 
