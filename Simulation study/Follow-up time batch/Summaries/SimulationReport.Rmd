@@ -1081,7 +1081,79 @@ if(params$save.plot) {
 
 ```{r}
 power1_tab
+```
 
+```{r}
+power1_tab<-show_tab(methods=c("ML","Firth","DatAug","Exact","Mid-P"), stat="power1", multi=100)  %>% data.frame() %>% select(-epv)
+
+p.power1 <- nested_loop_plot(
+    power1_tab, x = "beta1", grid_rows = "ncov", steps = "n", 
+    colors = col,
+    replace_labels = labs,
+    steps_y_base = -15,
+    steps_y_height = 4, 
+    steps_values_annotate = TRUE, 
+    x_name = TeX("$\\beta_1$"),
+    steps_annotation_size = 3,
+    y_name = "Power",
+    design_type = 'partial',
+    post_processing = list(
+        add_custom_theme = list(axis.text.x = element_text(angle = -90, 
+                                                           vjust = 0.5, 
+                                                           size = 10), 
+                                strip.background = element_rect(color="black",
+                                                                fill = "#FFFFFF",
+                                                                size=0.3, 
+                                                                linetype="blank"), 
+                                panel.border = element_blank(), 
+                                legend.position = "bottom"),
+        add_abline = list(intercept = 0, slope = 0, linetype = "dashed")
+    )
+)
+p.power1 <- p.power1 + guides(size=F)
+p.power1
+```
+```{r}
+if(params$save.plot) {
+  ggsave("power1.tiff", plot = p.power1, width=7, height=9,dpi = 600)
+} 
+```
+
+```{r}
+power1_tab<-show_tab(methods=c("Firth","LXPMLE"), stat="power1", multi=100)  %>% data.frame() %>% select(-epv)
+
+p.power1.extra <- nested_loop_plot(
+    power1_tab, x = "beta1", grid_rows = "ncov", steps = "n", 
+    colors = col,
+    replace_labels = labs,
+    steps_y_base = -15,
+    steps_y_height = 4, 
+    steps_values_annotate = TRUE, 
+    x_name = TeX("$\\beta_1$"),
+    steps_annotation_size = 3,
+    y_name = "Power",
+    design_type = 'partial',
+    post_processing = list(
+        add_custom_theme = list(axis.text.x = element_text(angle = -90, 
+                                                           vjust = 0.5, 
+                                                           size = 10), 
+                                strip.background = element_rect(color="black",
+                                                                fill = "#FFFFFF",
+                                                                size=0.3, 
+                                                                linetype="blank"), 
+                                panel.border = element_blank(), 
+                                legend.position = "bottom"),
+        add_abline = list(intercept = 0, slope = 0, linetype = "dashed")
+    )
+)
+p.power1.extra <- p.power1.extra + guides(size=F)
+p.power1.extra
+```
+
+```{r}
+if(params$save.plot) {
+  ggsave("power1_extra.tiff", plot = p.power1.extra, width=7, height=9,dpi = 600)
+} 
 ```
 
 ##### Power to exclude $\beta_2=0$ from CI
@@ -1091,6 +1163,81 @@ Power has been multiplied by 100 to improve readability.
 ```{r}
 power2_tab
 ```
+
+```{r}
+power2_tab<-show_tab(methods=c("ML","Firth","DatAug","Exact","Mid-P"), stat="power2", multi=100)  %>% data.frame() %>% select(-epv)
+
+p.power2 <- nested_loop_plot(
+    power2_tab, x = "beta1", grid_rows = "ncov", steps = "n", 
+    colors = col,
+    replace_labels = labs,
+    steps_y_base = -15,
+    steps_y_height = 4, 
+    steps_values_annotate = TRUE, 
+    x_name = TeX("$\\beta_1$"),
+    steps_annotation_size = 3,
+    grid_scales="free",
+    y_name = "Power",
+    design_type = 'partial',
+    post_processing = list(
+        add_custom_theme = list(axis.text.x = element_text(angle = -90, 
+                                                           vjust = 0.5, 
+                                                           size = 10), 
+                                strip.background = element_rect(color="black",
+                                                                fill = "#FFFFFF",
+                                                                size=0.3, 
+                                                                linetype="blank"), 
+                                panel.border = element_blank(), 
+                                legend.position = "bottom"),
+        add_abline = list(intercept = 0, slope = 0, linetype = "dashed")
+    )
+)
+p.power2 <- p.power2 + guides(size=F)
+p.power2
+```
+```{r}
+if(params$save.plot) {
+  ggsave("power2.tiff", plot = p.power2, width=7, height=9,dpi = 600)
+} 
+```
+
+```{r}
+power2_tab<-show_tab(methods=c("Firth","LXPMLE"), stat="power1", multi=100)  %>% data.frame() %>% select(-epv)
+
+p.power2.extra <- nested_loop_plot(
+    power2_tab, x = "beta1", grid_rows = "ncov", steps = "n", 
+    colors = col,
+    replace_labels = labs,
+    steps_y_base = -15,
+    steps_y_height = 4, 
+    steps_values_annotate = TRUE, 
+    x_name = TeX("$\\beta_1$"),
+    steps_annotation_size = 3,
+    y_name = "Power",
+    design_type = 'partial',
+    post_processing = list(
+        add_custom_theme = list(axis.text.x = element_text(angle = -90, 
+                                                           vjust = 0.5, 
+                                                           size = 10), 
+                                strip.background = element_rect(color="black",
+                                                                fill = "#FFFFFF",
+                                                                size=0.3, 
+                                                                linetype="blank"), 
+                                panel.border = element_blank(), 
+                                legend.position = "bottom"),
+        add_abline = list(intercept = 0, slope = 0, linetype = "dashed")
+    )
+)
+p.power2.extra <- p.power2.extra + guides(size=F)
+p.power2.extra
+```
+
+```{r}
+if(params$save.plot) {
+  ggsave("power2_extra.tiff", plot = p.power2.extra, width=7, height=9,dpi = 600)
+} 
+```
+
 
 #### Width
 
@@ -1102,9 +1249,166 @@ The median width of confidence intervals has been multiplied by 100.
 width1_tab
 ```
 
+```{r}
+width1_tab<-show_tab(methods=c("ML","Firth","DatAug","Exact","Mid-P"), stat="width1", multi=100)
+width1.plot <- merge(width1_tab, PoissonF_sep_nonconv %>% select(MUE1,n,ncov,truebeta1) %>% mutate(beta1=round(truebeta1,2)) %>% data.frame() %>% filter(!is.na(MUE1)), all.x=T) %>% data.frame() %>%
+  mutate(Exact = ifelse((MUE1 < 0.5 | is.na(MUE1)), Exact, NA), 
+         Mid.P = ifelse((MUE1 <0.5 | is.na(MUE1)), Mid.P, NA),
+         ML = ifelse((MUE1 <0.5 | is.na(MUE1)), ML, NA), 
+         ML = ifelse(ML<1000, ML, NA)) %>%
+  select(-truebeta1, -epv, -MUE1)
+
+p.width1 <- nested_loop_plot(
+    width1.plot, x = "beta1", grid_rows = "ncov", steps = "n", 
+    colors = col,
+    replace_labels = labs,
+    steps_y_base = -100,
+    steps_y_height = 20, 
+    steps_values_annotate = TRUE, 
+    x_name = TeX("$\\beta_1$"),
+    steps_annotation_size = 3,
+    grid_scales="free",
+    y_name = "Width",
+    design_type = 'partial',
+    post_processing = list(
+        add_custom_theme = list(axis.text.x = element_text(angle = -90, 
+                                                           vjust = 0.5, 
+                                                           size = 10), 
+                                strip.background = element_rect(color="black",
+                                                                fill = "#FFFFFF",
+                                                                size=0.3, 
+                                                                linetype="blank"), 
+                                panel.border = element_blank(), 
+                                legend.position = "bottom"),
+        add_abline = list(intercept = 0, slope = 0, linetype = "dashed")
+    )
+)
+p.width1 <- p.width1 + guides(size=F)
+p.width1
+```
+
+```{r}
+if(params$save.plot) {
+  ggsave("width1.tiff", plot = p.width1, width=7, height=9,dpi = 600)
+} 
+```
+
+```{r}
+width1_tab<-show_tab(methods=c("Firth", "LXPMLE"), stat="width1", multi=100) %>% data.frame() %>% select(-epv)
+
+p.width1.extra <- nested_loop_plot(
+    width1_tab, x = "beta1", grid_rows = "ncov", steps = "n", 
+    colors = col,
+    replace_labels = labs,
+    steps_y_base = -100,
+    steps_y_height = 10, 
+    steps_values_annotate = TRUE, 
+    x_name = TeX("$\\beta_1$"),
+    steps_annotation_size = 3,
+    grid_scales="free",
+    y_name = "Width",
+    design_type = 'partial',
+    post_processing = list(
+        add_custom_theme = list(axis.text.x = element_text(angle = -90, 
+                                                           vjust = 0.5, 
+                                                           size = 10), 
+                                strip.background = element_rect(color="black",
+                                                                fill = "#FFFFFF",
+                                                                size=0.3, 
+                                                                linetype="blank"), 
+                                panel.border = element_blank(), 
+                                legend.position = "bottom"),
+        add_abline = list(intercept = 0, slope = 0, linetype = "dashed")
+    )
+)
+p.width1.extra <- p.width1.extra + guides(size=F)
+p.width1.extra
+```
+
+```{r}
+if(params$save.plot) {
+  ggsave("width1_extra.tiff", plot = p.width1.extra, width=7, height=9,dpi = 600)
+} 
+```
+
 ##### Median width of CI for $\beta_2$
 
 ```{r}
 width2_tab
 ```
 
+```{r}
+width2_tab<-show_tab(methods=c("ML","Firth","DatAug","Exact","Mid-P"), stat="width2", multi=100) %>% data.frame() %>% select(-epv)
+
+p.width2 <- nested_loop_plot(
+    width2_tab, x = "beta1", grid_rows = "ncov", steps = "n", 
+    colors = col,
+    replace_labels = labs,
+    steps_y_base = -50,
+    steps_y_height = 10, 
+    steps_values_annotate = TRUE, 
+    x_name = TeX("$\\beta_1$"),
+    steps_annotation_size = 3,
+    grid_scales="free",
+    y_name = "Width",
+    design_type = 'partial',
+    post_processing = list(
+        add_custom_theme = list(axis.text.x = element_text(angle = -90, 
+                                                           vjust = 0.5, 
+                                                           size = 10), 
+                                strip.background = element_rect(color="black",
+                                                                fill = "#FFFFFF",
+                                                                size=0.3, 
+                                                                linetype="blank"), 
+                                panel.border = element_blank(), 
+                                legend.position = "bottom"),
+        add_abline = list(intercept = 0, slope = 0, linetype = "dashed")
+    )
+)
+p.width2 <- p.width2 + guides(size=F)
+p.width2
+```
+
+```{r}
+if(params$save.plot) {
+  ggsave("width2.tiff", plot = p.width2, width=7, height=9,dpi = 600)
+} 
+```
+
+```{r}
+width2_tab<-show_tab(methods=c("Firth", "LXPMLE"), stat="width1", multi=100) %>% data.frame() %>% select(-epv)
+
+p.width2.extra <- nested_loop_plot(
+    width2_tab, x = "beta1", grid_rows = "ncov", steps = "n", 
+    colors = col,
+    replace_labels = labs,
+    steps_y_base = -100,
+    steps_y_height = 10, 
+    steps_values_annotate = TRUE, 
+    x_name = TeX("$\\beta_1$"),
+    steps_annotation_size = 3,
+    grid_scales="free",
+    y_name = "Width",
+    design_type = 'partial',
+    post_processing = list(
+        add_custom_theme = list(axis.text.x = element_text(angle = -90, 
+                                                           vjust = 0.5, 
+                                                           size = 10), 
+                                strip.background = element_rect(color="black",
+                                                                fill = "#FFFFFF",
+                                                                size=0.3, 
+                                                                linetype="blank"), 
+                                panel.border = element_blank(), 
+                                legend.position = "bottom"),
+        add_abline = list(intercept = 0, slope = 0, linetype = "dashed")
+    )
+)
+p.width2.extra <- p.width2.extra + guides(size=F)
+p.width2.extra
+```
+
+```{r}
+if(params$save.plot) {
+  ggsave("width2_extra.tiff", plot = p.width2.extra, width=7, height=9,dpi = 600)
+} 
+```
