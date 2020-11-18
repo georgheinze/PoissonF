@@ -861,10 +861,10 @@ colnames(leftcov1_tab) <- c(colnames(leftcov1_tab)[1:4],paste0("left_",colnames(
 colnames(rightcov1_tab) <- c(colnames(rightcov1_tab)[1:4],paste0("right_",colnames(rightcov1_tab)[5:9]))
 cov1.plot <- cbind(leftcov1_tab, rightcov1_tab[,5:9]) %>% select(-epv)
 
-y.breaks <- sort(c(min.all,seq(1-2*(1-min.all),1,0.025)))
+y.breaks <- seq(1-2*(1-min.all),1,0.025)
+if(!(min.all %in% y.breaks)) y.breaks <- sort(c(min.all,seq(1-2*(1-min.all),1,0.025)))
 
 y.labs <- c(sort(y.breaks[which(y.breaks==min.all):length(y.breaks)], decreasing = T), y.breaks[(which(y.breaks==min.all)+1):length(y.breaks)])
-y.labs <- y.labs[-3]
 
 p.coverage1 <- nested_loop_plot(
     cov1.plot, x = "beta1", grid_rows = "ncov", steps = "n", 
@@ -916,10 +916,10 @@ colnames(leftcov1_tab) <- c(colnames(leftcov1_tab)[1:4],paste0("left_",colnames(
 colnames(rightcov1_tab) <- c(colnames(rightcov1_tab)[1:4],paste0("right_",colnames(rightcov1_tab)[5:6]))
 cov1.plot <- cbind(leftcov1_tab, rightcov1_tab[,5:6]) %>% select(-epv)
 
-y.breaks <- sort(c(min.all,seq(1-2*(1-min.all),1,0.05)))
+y.breaks <- seq(1-2*(1-min.all),1,0.025)
+if(!(min.all %in% y.breaks)) y.breaks <- sort(c(min.all,seq(1-2*(1-min.all),1,0.025)))
 
 y.labs <- c(sort(y.breaks[which(y.breaks==min.all):length(y.breaks)], decreasing = T), y.breaks[(which(y.breaks==min.all)+1):length(y.breaks)])
-y.labs <- y.labs[-3]
 
 p.coverage1.extra <- nested_loop_plot(
     cov1.plot, x = "beta1", grid_rows = "ncov", steps = "n", 
@@ -977,10 +977,10 @@ colnames(leftcov2_tab) <- c(colnames(leftcov2_tab)[1:4],paste0("left_",colnames(
 colnames(rightcov2_tab) <- c(colnames(rightcov2_tab)[1:4],paste0("right_",colnames(rightcov2_tab)[5:9]))
 cov2.plot <- cbind(leftcov2_tab, rightcov2_tab[,5:9]) %>% select(-epv)
 
-y.breaks <- sort(c(min.all,seq(1-2*(1-min.all),1,0.025)))
+y.breaks <- seq(1-2*(1-min.all),1,0.025)
+if(!(min.all %in% y.breaks)) y.breaks <- sort(c(min.all,seq(1-2*(1-min.all),1,0.025)))
 
 y.labs <- c(sort(y.breaks[which(y.breaks==min.all):length(y.breaks)], decreasing = T), y.breaks[(which(y.breaks==min.all)+1):length(y.breaks)])
-y.labs <- y.labs[-3]
 
 p.coverage2 <- nested_loop_plot(
     cov2.plot, x = "beta1", grid_rows = "ncov", steps = "n", 
@@ -1032,10 +1032,10 @@ colnames(leftcov2_tab) <- c(colnames(leftcov2_tab)[1:4],paste0("left_",colnames(
 colnames(rightcov2_tab) <- c(colnames(rightcov2_tab)[1:4],paste0("right_",colnames(rightcov2_tab)[5:6]))
 cov2.plot <- cbind(leftcov2_tab, rightcov2_tab[,5:6]) %>% select(-epv)
 
-y.breaks <- sort(c(min.all,seq(1-2*(1-min.all),1,0.025)))
+y.breaks <- seq(1-2*(1-min.all),1,0.025)
+if(!(min.all %in% y.breaks)) y.breaks <- sort(c(min.all,seq(1-2*(1-min.all),1,0.025)))
 
 y.labs <- c(sort(y.breaks[which(y.breaks==min.all):length(y.breaks)], decreasing = T), y.breaks[(which(y.breaks==min.all)+1):length(y.breaks)])
-y.labs <- y.labs[-3]
 
 p.coverage2.extra <- nested_loop_plot(
     cov2.plot, x = "beta1", grid_rows = "ncov", steps = "n", 
@@ -1248,6 +1248,8 @@ The median width of confidence intervals has been multiplied by 100.
 ```{r}
 width1_tab
 ```
+
+In the plots below median width of confidence intervals is only shown if percentage of datasets where MUE replaced ML-estimator is smaller than 50%.
 
 ```{r}
 width1_tab<-show_tab(methods=c("ML","Firth","DatAug","Exact","Mid-P"), stat="width1", multi=100)
