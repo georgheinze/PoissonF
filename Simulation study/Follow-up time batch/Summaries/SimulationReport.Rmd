@@ -391,8 +391,6 @@ kable(RMSPEN_tab)
 RMSPEN_tab<-show_tab(methods=c("ML","FL","FLAC","DAP"), stat="rmspen", multi=1) %>% data.frame()
 names(RMSPEN_tab)[names(RMSPEN_tab)=="ncov"] <- "k"
 
-RMSPEN_tab[,c("ML","FL","FLAC","DAP")] <-  RMSPEN_tab[,c("ML","FL","FLAC","DAP")]*10/sqrt(RMSPEN_tab[,"n"])
-
 
 col <- col_all[c("ML","FL","FLAC","DAP")]
 plot_data <- nested_loop_base_data(
