@@ -1,0 +1,1562 @@
+---
+title: "Poisson regression simulation report"
+author: "Georg Heinze"
+Date: 9 October 2020
+output:
+  word_document: default
+  html_document:
+    df_print: paged
+params: 
+  save.plot: true
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+
+#col <- c("#4E84C4", "#E7B800", "#FC4E07", "#52854C","#C3D7A4","#F4EDCA","#C4961A","#D16103", "#FFDB6D",   "#293352", "#00AFBB")
+col_all <- c("#FF8000","#009900", "#E7B800",  "#3333FF","#99CCFF", "#293352", "#000000", "#cc0066", "#0099cc")
+names(col_all) <- c("ML", "FL", "FLAC",  "XP", "XP:mid-p", "BDA", "LXPMLE", "LXPMLE_1", "LXPMLE_2")
+plot(1:9, col=col_all, pch=16, cex=2)
+
+knitr::opts_chunk$set(fig.width=7, fig.height=7)
+```
+
+```{r libs, include=F}
+library(looplot)
+library(readr)
+library(latex2exp)
+library(readr)
+library(magrittr)
+library(knitr) # to produce nicer tables;
+```
+
+
+<!-- TODO: 
+* labels in p.lxpmle_tab_plot
+
+-->
+
+
+## Preparations
+
+```{r}
+PoissonFResultsTable <- read_delim("PoissonFResultsTable.csv", 
+    ";", escape_double = FALSE, trim_ws = TRUE)
+PoissonF_sep_nonconv <- read_delim("PoissonF_sep_nonconv.csv", 
+    ";", escape_double = FALSE, trim_ws = TRUE)
+```
+
+
+```{r}
+### function to constructs a scenarios by methods table
+
+PoissonFResultsTable$method[PoissonFResultsTable$method=="Firth"] <- "FL"
+PoissonFResultsTable$method[PoissonFResultsTable$method=="Exact"] <- "XP"
+PoissonFResultsTable$method[PoissonFResultsTable$method=="Mid-P"] <- "XP:mid-p"
+PoissonFResultsTable$method[PoissonFResultsTable$method=="DatAug"] <- "BDA"
+PoissonF_sep_nonconv$method[PoissonF_sep_nonconv$method=="Exact"] <- "XP"
+
+show_tab<-function(methods=c("ML", "FLAC", "LXPMLE", "BDA", "XP"), stat="bias1", multi=1, rounder=10, log=FALSE, dattable=PoissonFResultsTable){
+  nmeth<-length(methods)
+  
+  grid<-cbind(ncov=c(rep(2,27), rep(5, 27), rep(10, 27)), epv=rep(c(rep(3,9), rep(5,9), rep(10,9)),3))
+  grid<-cbind(grid, n=grid[,1]*grid[,2]*10, beta1=rep(((1:9)-5)*log(2),9))
+  
+  res<-matrix(NA,81,nmeth)
+  colnames(res)<-methods
+  
+  para<-as.data.frame(dattable[-1,c("ncov","epv","truebeta1","method",stat)])
+  
+  for(i in 1:nmeth){
+    for(j in 1:81){
+      cond<-para$ncov==grid[j,1] & para$epv==grid[j,2] & para$method==methods[i] & round(para$truebeta1,5)==round(grid[j,4],5)
+      if(sum(cond)==1) res[j,i]<-para[cond,stat]
+      else if(log) cat("ncov ",grid[j,1]," epv ", grid[j,2], " beta ", round(grid[j,4],5), ": no data found for ", stat, " of ", methods[i],"\n")
+    }
+  }
+  return(cbind(round(grid,2), round(res*multi,rounder)))
+}
+
+
+Sep_tab1 <-show_tab(methods="ML", stat="separation1", multi=100, round=1, dattable=PoissonF_sep_nonconv)
+Sep_tab2 <-show_tab(methods="ML", stat="separation2", multi=100, round=1, dattable=PoissonF_sep_nonconv)
+
+Sep_tab <- cbind(Sep_tab1[,1:4], Sep_caused_beta1=Sep_tab1[,5], Sep_caused_beta2=Sep_tab2[,5])
+
+LXPMLE_NA_tab1 <-show_tab(methods="LXPMLE", stat="BetaNA1", multi=100, round=1, dattable=PoissonF_sep_nonconv)
+LXPMLE_NA_tab2 <-show_tab(methods="LXPMLE", stat="BetaNA2", multi=100, round=1, dattable=PoissonF_sep_nonconv)
+
+LXPMLE_NoLowerCI1_tab <-show_tab(methods="LXPMLE", stat="noLowerCI1", multi=100, round=1, dattable=PoissonF_sep_nonconv)
+LXPMLE_NoUpperCI1_tab <-show_tab(methods="LXPMLE", stat="NoUpperCI1", multi=100, round=1, dattable=PoissonF_sep_nonconv)
+LXPMLE_NoLowerCI2_tab <-show_tab(methods="LXPMLE", stat="NoLowerCI2", multi=100, round=1, dattable=PoissonF_sep_nonconv)
+LXPMLE_NoUpperCI2_tab <-show_tab(methods="LXPMLE", stat="NoUpperCI2", multi=100, round=1, dattable=PoissonF_sep_nonconv)
+
+LXPMLE_tab<-cbind(LXPMLE_NA_tab1[,1:4], Beta1_na=LXPMLE_NA_tab1[,5], Beta2_na=LXPMLE_NA_tab2[,5], 
+                  LowerCI1_na=LXPMLE_NoLowerCI1_tab[,5], UpperCI1_na=LXPMLE_NoUpperCI1_tab[,5],
+                  LowerCI2_na=LXPMLE_NoLowerCI2_tab[,5], UpperCI2_na=LXPMLE_NoUpperCI2_tab[,5])
+                  
+
+
+XL_tab1 <-show_tab(methods="XP", stat="BetaNA1", multi=100, round=1, dattable=PoissonF_sep_nonconv) 
+XL_tab2 <-show_tab(methods="XP", stat="BetaNA2", multi=100, round=1, dattable=PoissonF_sep_nonconv) 
+MUE_tab1 <-show_tab(methods="XP", stat="MUE1", multi=100, round=1, dattable=PoissonF_sep_nonconv) 
+MUE_tab2 <-show_tab(methods="XP", stat="MUE2", multi=100, round=1, dattable=PoissonF_sep_nonconv) 
+
+XL_tab <- cbind(XL_tab1[,1:4], Beta1_na=XL_tab1[,5], Beta2_na=XL_tab2[,5],
+                   Beta1_MUE=MUE_tab1[,5], Beta2_MUE=MUE_tab2[,5])
+
+
+RMSPEN_tab<-show_tab(methods=c("ML","FL","FLAC","BDA"), stat="rmspen", multi=100, round=0)
+
+BIAS1_tab<-show_tab(methods=c("ML", "FLAC", "LXPMLE", "BDA", "XP"), stat="bias1", multi=100, round=0)
+
+BIAS2_tab<-show_tab(methods=c("ML", "FLAC", "LXPMLE", "BDA", "XP"), stat="bias2", multi=100, round=0)
+
+RMSE1_tab <- show_tab(methods=c("ML", "FLAC", "LXPMLE", "BDA", "XP"), stat="rmsen1", multi=100, round=0)
+
+RMSE2_tab <- show_tab(methods=c("ML", "FLAC", "LXPMLE", "BDA", "XP"), stat="rmsen2", multi=100, round=0)
+
+leftcov1_tab<-show_tab(methods=c("ML","FLAC","LXPMLE","BDA","XP","XP:mid-p"), stat="leftcov1", multi=1000, round=0)
+leftcov2_tab<-show_tab(methods=c("ML","FLAC","LXPMLE","BDA","XP","XP:mid-p"), stat="leftcov2", multi=1000, round=0)
+rightcov1_tab<-show_tab(methods=c("ML","FLAC","LXPMLE","BDA","XP","XP:mid-p"), stat="rightcov1", multi=1000, round=0)
+rightcov2_tab<-show_tab(methods=c("ML","FLAC","LXPMLE","BDA","XP","XP:mid-p"), stat="rightcov2", multi=1000, round=0)
+
+lrcov1_tab<-matrix(NA,81,ncol(leftcov1_tab)-4)
+colnames(lrcov1_tab)<-colnames(leftcov1_tab[,-c(1:4)])
+for(i in 1:ncol(lrcov1_tab)) lrcov1_tab[,i]<-paste(leftcov1_tab[,4+i]-975, rightcov1_tab[,4+i]-975, sep="/")
+
+lrcov2_tab<-matrix(NA,81,ncol(leftcov2_tab)-4)
+colnames(lrcov2_tab)<-colnames(leftcov2_tab[,-c(1:4)])
+for(i in 1:ncol(lrcov2_tab)) lrcov2_tab[,i]<-paste(leftcov2_tab[,4+i]-975, rightcov2_tab[,4+i]-975, sep="/")
+
+power1_tab<-show_tab(methods=c("ML","FLAC","LXPMLE","BDA","XP","XP:mid-p"), stat="power1", multi=100, round=0)
+power2_tab<-show_tab(methods=c("ML","FLAC","LXPMLE","BDA","XP","XP:mid-p"), stat="power2", multi=100, round=0)
+
+width1_tab<-show_tab(methods=c("ML","FLAC","LXPMLE","BDA","XP","XP:mid-p"), stat="width1", multi=100, round=0)
+width2_tab<-show_tab(methods=c("ML","FLAC","LXPMLE","BDA","XP","XP:mid-p"), stat="width2", multi=100, round=0)
+
+
+```
+
+
+## Methods
+
+The aim of the simulation study was to evaluate predictions and point estimates and confidence intervals of regression coefficients of various methods for estimation of Poisson regression models.
+
+The data was generated to best resemble real medical data with mixed types of covariates (binary, ordinal, continuous). We generated data sets with two, five or 10 covariates. The covariates were distributed as follows, square brackets $[z]$ indicate the nearest integer lower than $z$: 
+
+
+|**$z_k$** | **Correlation of z_k** | **Type**|**$x_k$** | **$E(x_k)$** |
+| --- | --- | --- | --- | --- |
+| z1 | z2 (0.5), z7 (0.5) | binary | x1 = (z1 \> 1.28) | 0.1 |
+| z2 | z1 (0.5) | binary | x2 = (z2 \> 0.35) | 0.36 |
+| z3 | z4 (-0.5), z5 (-0.3) | binary | x3 = (z3 \> 0) | 0.5 |
+| z4 | z3 (-0.5), z5 (0.5), z7(0.3), z8 (0.5), z9(0.3) | binary | x4 = (z4 \> 0) | 0.5 |
+| z5 | z3(-0.3), z4(0.5), z8(0.3), z9(0.3) | ordinal | x5 = (z5 \>= -1.2) + (z5 \>= 0.75) | 1.11 |
+| z6 | z7 (-0.3), z8(0.3) | ordinal | x6 = (z6 \>= 0.5) + (z6 \>= 1.5) | 0.37 |
+| z7 | z1 (0.5), z4(0.3), z6(-0.3) | continuous | x7 = [10*z7 +55] | 54.5 |
+| z8 | z4(0.5), z5(0.3), z6(0.3), z9(0.5) | continuous | x8 = [max(0, 100*exp(z8)-20)] | 131.1 |
+| z9 | z4(0.3), z5(0.3), z8 (0.5) | continuous | x9 = [max(0, 80*exp(z8)-20)] | 1.77 |
+| z10 | | continuous | X10 = [10*z10 +120] | 119.5 |
+
+We considered a full factorial design, varying the number of covariates considered , the true regression coefficient (log incidence rate ratio) of $X_1$,  $\beta_1 \in \{-log⁡(16),-log⁡(8),-log⁡(4),-log⁡(2),0,log⁡(2),log⁡(4),log⁡(8),log⁡(16)\},$
+keeping all other $\beta_j$ fixed at $\beta_2,\beta_4=0.69; \beta_3=-0.69; \beta_5=0.35; \beta_6=-0.35;\beta_7,\beta_9=0.69/ISR;\beta_8,\beta_10=-0.69/ISR$, where $ISR$ was the intersextile range (difference between fifth and first sextile) of the corresponding continuous covariate. When $k<10$, $\beta_j=0 (j>k)$. The intercept was chosen such that the marginal event incidence was approximately 0.1. We simulated a rate multiplier following our example (see the manuscript) by drawing from a zero-truncated Poisson distribution (restricted to numbers > 0) with mean 1.6. The outcome (number of events) was then drawn from a Poisson distribution with expected event rate $\mu_i = \exp(\eta_i) = \exp(\beta_0 + x_{i1}\beta_1 + \ldots + x_{ik}\beta_k)\psi_i$. The sample size was determined by fixing the expected *events per variable* (EPV) ratio at desired values typical for sparse epidemiological data sets (3, 5 or 10). This resulted in 81 possible combinations of simulation parameters. We simulated 1,0000 data sets with each of those combinations.
+
+The estimands of the simulation study were the predictions and the regression coefficients.
+
+The methods to be compared were:
+
+|Method|Point estimation| confidence interval estimation|Prediction|SAS procedure/macro|
+|---|---|---|---|---|
+|Maximum likelihood (ML)|Yes|Wald|Yes|PROC GENMOD|
+|FL by SAS macro |Yes|Profile penalized likelihood|Yes|macro %flacpoisson|
+|FLAC|(same as FL)|(same as FL)|Yes|macro %flacpoisson|
+|FL by LogXact implementation (LXPMLE)|Yes|Profile penalized likelihood|No|PROC LOGXACT|
+|Data augmentation (BDA)|Yes|Profile penalized likelihood|Yes|macro %dataugpoisson|
+|XP|Yes|Exact|No|PROC LOGXACT|
+|XP:mid-p|(same as XP)|XP:mid-p|No|PROC LOGXACT|
+
+The performance measures were:
+
+|Measure |Estimands| Definition|
+|---|---|---|
+|Root Mean Prediction Error $\times n$ (RMSPEN)|$\mu$|$E(\hat\mu-\mu)^2 \times n$|
+|Bias|$\beta_1$, $\beta_2$|$E(\hat\beta-\beta)$|
+|RMSEN|$\beta_1$, $\beta_2$|$\sqrt\{E(\hat\beta-\beta)^2 \times n\}$|
+|Coverage|Confidence intervals for $\beta_1$, $\beta_2$|$E(I(CL_{lower} < \beta)), E(I(CL_{upper} > \beta))$|
+|Power|Confidence intervals  for $\beta_1$, $\beta_2$| $E(I(CL_{lower} > 0 | CL_{upper} < 0))$|
+|Width|Confidence intervals  for $\beta_1$, $\beta_2$| $Median(CL_{upper}-CL_{lower})$|
+
+## Results
+
+
+
+### Results as tables
+
+
+#### Frequency of separation
+
+This table shows by scenario the percentage of data sets with separation caused by $X_1$ or by $X_2$.
+
+```{r}
+kable(Sep_tab)
+```
+
+#### Unavailability of XP estimates
+
+This table shows by scenario the percentage of data sets with XP estimates being totally unavailable, and of median unbiased estimates (MUE) replacing the maximum likelihood estimate.
+
+```{r}
+kable(XL_tab[!is.na(XL_tab[,5]),])
+
+#cbind(Sep_tab, XL_tab[,5:8]) # compare occurrence of separation and replacement by MUE;
+```
+
+```{r sep.plot, message=F}
+Sep_tab1.plot <-show_tab(methods="ML", stat="separation1", multi=100, dattable=PoissonF_sep_nonconv)
+MUE_tab1.plot <-show_tab(methods="XP", stat="MUE1", multi=100, dattable=PoissonF_sep_nonconv) 
+
+
+
+sep_tab.plot <- merge(Sep_tab1.plot, MUE_tab1.plot) %>% data.frame() %>% select(-epv)
+
+names(sep_tab.plot)[names(sep_tab.plot)=="ncov"] <- "k"
+
+col <- col_all[c("ML", "XP")]
+p.sep <- nested_loop_plot(resdf = sep_tab.plot,
+                          x = "beta1", steps = "n",
+                          grid_rows = "k",
+                          colors=col,
+                          hline_intercept = 0,
+                          steps_values_annotate = TRUE,
+                          steps_y_base = -10,
+                          steps_annotation_size=3.5,
+                          steps_names_annotate=F,
+                          #replace_labels = labs,
+                          na_rm=T,
+                          sizes=1,
+                          y_name = "Relative frequency (x 100)",
+                          x_name = TeX("$\\beta_1$"),
+                          legend_labels = c("ML estimate does not exist", "MCLE replaced by MUE"),
+                          design_type = "partial",
+                                 post_processing = list(
+                                   add_custom_theme = list(
+                                     axis.text.x = element_text(angle = -90, 
+                                                                vjust = 0.5, 
+                                                                size = 10), 
+                                     strip.background = element_rect(color="black",
+                                                                     fill = "#FFFFFF",
+                                                                     size=0.3,
+                                                                     linetype="blank"),
+                                     panel.border = element_blank(),
+                                     legend.position = "bottom"),
+                                   add_abline = list(intercept = c(0,25,50,75), slope = 0, col="lightgrey", linetype="solid")
+                                 ))
+p.sep <- p.sep + guides(size=F)
+p.sep
+rm(col)
+
+
+```
+
+```{r}
+if(params$save.plot) {
+  ggsave("sep.tiff", plot = p.sep, width=7, height=7,dpi = 600, compression ="lzw")
+} 
+```
+
+#### Unavailability of PROC LOGXACT estimates of FL-corrected estimates
+
+This table shows the percentage of data sets with problems with the PMLE estimate implemented in PROC LOGXACT.
+
+```{r}
+kable(LXPMLE_tab[!is.na(LXPMLE_tab[,5]),c(1:4,5,7,8)])
+```
+
+```{r lxpme1.plot, message=F}
+LXPMLE_NA_tab1.plot <-show_tab(methods="LXPMLE", stat="BetaNA1", multi=100, dattable=PoissonF_sep_nonconv)
+LXPMLE_NA_tab2.plot <-show_tab(methods="LXPMLE", stat="BetaNA2", multi=100, dattable=PoissonF_sep_nonconv)
+
+LXPMLE_NoLowerCI1_tab.plot <-show_tab(methods="LXPMLE", stat="noLowerCI1", multi=100, dattable=PoissonF_sep_nonconv)
+LXPMLE_NoUpperCI1_tab.plot <-show_tab(methods="LXPMLE", stat="NoUpperCI1", multi=100, dattable=PoissonF_sep_nonconv)
+LXPMLE_NoLowerCI2_tab.plot <-show_tab(methods="LXPMLE", stat="NoLowerCI2", multi=100, dattable=PoissonF_sep_nonconv)
+LXPMLE_NoUpperCI2_tab.plot <-show_tab(methods="LXPMLE", stat="NoUpperCI2", multi=100, dattable=PoissonF_sep_nonconv)
+
+LXPMLE_tab.plot<-cbind(k=LXPMLE_NA_tab1.plot[,"ncov"], LXPMLE_NA_tab1.plot[,2:4], Beta1_na=LXPMLE_NA_tab1.plot[,5], Beta2_na=LXPMLE_NA_tab2.plot[,5],
+                  LowerCI1_na=LXPMLE_NoLowerCI1_tab.plot[,5], UpperCI1_na=LXPMLE_NoUpperCI1_tab.plot[,5],
+                  LowerCI2_na=LXPMLE_NoLowerCI2_tab.plot[,5], UpperCI2_na=LXPMLE_NoUpperCI2_tab.plot[,5]) %>% data.frame()
+
+col <- col_all[c("LXPMLE", "LXPMLE_1", "LXPMLE_2")]
+p.lxpmle1 <- nested_loop_plot(resdf = LXPMLE_tab.plot[,c("k", "n","beta1", "Beta1_na", "LowerCI1_na", "UpperCI1_na")],
+                          x = "beta1", steps = "n",
+                          grid_rows = "k",
+                          colors=col,
+                          hline_intercept = 0,
+                          steps_values_annotate = TRUE,
+                          steps_y_base = -10,
+                          steps_annotation_size=3.5,
+                          steps_names_annotate=F,
+                          #replace_labels = labs,
+                          na_rm=T,
+                          sizes=1,
+                          y_name = "Relative frequency (x 100)",
+                          x_name = TeX("$\\beta_1$"),
+                          design_type = "partial",
+                                 post_processing = list(
+                                   add_custom_theme = list(
+                                     axis.text.x = element_text(angle = -90, 
+                                                                vjust = 0.5, 
+                                                                size = 10), 
+                                     strip.background = element_rect(color="black",
+                                                                     fill = "#FFFFFF",
+                                                                     size=0.3, 
+                                                                     linetype="blank"), 
+                                     panel.border = element_blank(),
+                                     legend.position = "bottom"
+                                   )
+                                 ))
+p.lxpmle1 <- p.lxpmle1 + guides(size=F)
+p.lxpmle1
+rm(col)
+```
+
+```{r}
+if(params$save.plot) {
+  ggsave("lxpmle1.tiff", plot = p.lxpmle1, width=7, height=7,dpi = 600, compression ="lzw")
+} 
+```
+
+
+```{r}
+kable(LXPMLE_tab[!is.na(LXPMLE_tab[,5]),c(1:4,6,9,10)])
+```
+
+
+```{r plot.lxpmle2, message=F}
+col <- col_all[c("LXPMLE", "LXPMLE_1", "LXPMLE_2")]
+p.lxpmle2 <- nested_loop_plot(resdf = LXPMLE_tab.plot[,c("k", "n","beta1", "Beta2_na", "LowerCI2_na", "UpperCI2_na")],
+                          x = "beta1", steps = "n",
+                          grid_rows = "k",
+                          colors=col,
+                          hline_intercept = 0,
+                          steps_values_annotate = TRUE,
+                          steps_y_base = -10,
+                          steps_annotation_size=3.5,
+                          steps_names_annotate=F,
+                          #replace_labels = labs,
+                          na_rm=T,
+                          sizes=1,
+                          y_name = "Relative frequency (x 100)",
+                          x_name = TeX("$\\beta_1$"),
+                          design_type = "partial",
+                                 post_processing = list(
+                                   add_custom_theme = list(
+                                     axis.text.x = element_text(angle = -90, 
+                                                                vjust = 0.5, 
+                                                                size = 10), 
+                                     strip.background = element_rect(color="black",
+                                                                     fill = "#FFFFFF",
+                                                                     size=0.3, 
+                                                                     linetype="blank"), 
+                                     panel.border = element_blank(),
+                                     legend.position = "bottom"
+                                   )
+                                 ))
+p.lxpmle2 <- p.lxpmle2 + guides(size=F)
+p.lxpmle2
+rm(col)
+```
+
+```{r}
+if(params$save.plot) {
+  ggsave("lxpmle2.tiff", plot = p.lxpmle2, width=7, height=7,dpi = 600, compression ="lzw")
+} 
+```
+
+#### Prediction error
+
+
+Here we present the root mean squared prediction error times sample size, computed as $\sqrt(MSPEN \times n)$. The mean squared prediction error times $n$ for a simulated data set was computed as by summing up the squared difference between estimated mean and true mean $\sum_i(\hat\mu_i - \mu_i)^2$. This number was then averaged over the 10,000 simulation runs.
+
+```{r}
+kable(RMSPEN_tab)
+# for description;
+# tmp <- show_tab(methods=c("ML","FL","FLAC","BDA"), stat="rmspen", multi=100, round=5)
+# cbind(tmp[,1:4], t(apply(tmp[,c("ML","FL","FLAC","BDA")], 1, function(x) c("ML", "FL","FLAC", "BDA")[order(x)] )) )
+# rm(tmp)
+```
+
+```{r rmspen.plot}
+RMSPEN_tab<-show_tab(methods=c("ML","FL","FLAC","BDA"), stat="rmspen", multi=1) %>% data.frame()
+names(RMSPEN_tab)[names(RMSPEN_tab)=="ncov"] <- "k"
+
+
+col <- col_all[c("ML","FL","FLAC","BDA")]
+plot_data <- nested_loop_base_data(
+    resdf = RMSPEN_tab[,-2],
+    x = "beta1", steps = c("n"),
+    #replace_labels = labs,
+    grid_rows = "k", 
+    design_type = "partial"
+    ) %>% 
+        nested_loop_paramsteps_data(
+            steps_y_base = 0.40,
+            steps_y_height = 0.05
+        )
+plot_data$stepdf %<>% 
+    mutate(
+        y_coord = ifelse(facet == 3, y_coord + 1, y_coord)
+    )
+
+p.predacc <- nested_loop_base_plot(
+    y_name = TeX("$RMSPE(\\mu) \\times \\sqrt{n}$"),
+    x_name = TeX("$\\beta_1$"),
+    plot_data,
+    colors = col, 
+    grid_scales = "free_y"
+) %>% 
+    nested_loop_paramsteps_plot(
+        plot_data, 
+        steps_values_annotate = TRUE,
+        steps_names_annotate = F, 
+        steps_annotation_size = 3.5,
+    ) %>% 
+    add_processing(
+        list(
+            add_custom_theme = list(
+                axis.text.x = element_text(angle = -90,
+                                           vjust = 0.5,
+                                           size = 10),
+                strip.background = element_rect(color="black",
+                                                fill = "#FFFFFF",
+                                                size=0.3,
+                                                linetype="blank"),
+                panel.border = element_blank(),
+                legend.position = "bottom"
+            )
+        )
+    )
+p.predacc
+rm(col)
+```
+
+```{r}
+if(params$save.plot) {
+  ggsave("Figure1.tiff", plot = p.predacc, width=7, height=7,dpi = 600, compression ="lzw")
+} 
+```
+
+#### Bias
+
+The following two tables show the estimated bias for the regression coefficients $\beta_1$ and $\beta_2$. Note that in the data generation, $\beta_2$ was fixed at $\beta_2=\log(2)$ while $\beta_1$ varied from $-\log(16)$ to $\log(16)$ in steps of $\log(2)$. Bias has been multiplied by 100 to improve readability.
+
+##### Bias of $\hat\beta_1$
+
+```{r}
+kable(BIAS1_tab)
+```
+
+```{r}
+BIAS1_tab<-show_tab(methods=c("ML", "FL", "LXPMLE", "XP", "BDA"), stat="bias1", multi=1)
+
+bias1.plot <- merge(BIAS1_tab, Sep_tab) %>% 
+  mutate(ML = ifelse(Sep_caused_beta1 <= 5, ML, NA)) %>%  #ML only when separation rate under 5% 
+  select(-epv, -Sep_caused_beta2, -Sep_caused_beta1)
+
+names(bias1.plot)[names(bias1.plot)=="ncov"] <- "k"
+
+col <- col_all[c("ML", "FL",  "XP", "BDA")]
+p.bias1 <- nested_loop_plot(resdf = bias1.plot[,!names(bias1.plot) %in% c("LXPMLE")],
+                            x = "beta1", steps = c("n"),
+                            grid_rows = "k",
+                            colors=col,
+                            legend_breaks = c("ML", "FL", "XP", "BDA"),
+                            hline_intercept = 0,
+                            steps_values_annotate = TRUE,
+                            steps_annotation_size=3.5,
+                            steps_names_annotate=F,
+                            #replace_labels = labs,
+                            steps_y_base=-1,
+                            steps_y_height = 0.2,
+                            grid_scales = "free_y",
+                            y_name = TeX("$Bias(\\beta_1)$"),
+                            x_name = TeX("$\\beta_1$"),
+                            design_type = "partial",  
+                            post_processing = list(
+                              add_custom_theme = list(
+                                axis.text.x = element_text(angle = -90, 
+                                                           vjust = 0.5, 
+                                                           size = 10), 
+                                strip.background = element_rect(color="black",
+                                                                fill = "#FFFFFF",
+                                                                size=0.3, 
+                                                                linetype="blank"), 
+                                panel.border = element_blank(), 
+                                legend.position = "bottom")
+                            )
+)
+p.bias1 <- p.bias1 + guides(size=F)
+p.bias1
+rm(col)
+```
+
+```{r}
+if(params$save.plot) {
+  ggsave("bias1_main.tiff", plot = p.bias1, width=7, height=7,dpi = 600, compression ="lzw")
+} 
+```
+
+```{r}
+col <- col_all[c("FL", "LXPMLE")]
+p.bias1.extra <- nested_loop_plot(resdf = bias1.plot[,names(bias1.plot) %in% c("k", "n", "beta1", "FL", "LXPMLE")],
+                            x = "beta1", steps = c("n"),
+                            grid_rows = "k",
+                            colors=col,
+                            hline_intercept = 0,
+                            steps_values_annotate = TRUE,
+                            steps_annotation_size=3.5,
+                            #replace_labels = labs,
+                            steps_y_base=-0.5,
+                            steps_y_height = 0.10,
+                            steps_names_annotate=F,
+                            grid_scales = "free_y",
+                            y_name = TeX("$Bias(\\beta_1)$"),
+                            x_name = TeX("$\\beta_1$"),
+                            design_type = "partial",  
+                            post_processing = list(
+                              add_custom_theme = list(
+                                axis.text.x = element_text(angle = -90, 
+                                                           vjust = 0.5, 
+                                                           size = 10), 
+                                strip.background = element_rect(color="black",
+                                                                fill = "#FFFFFF",
+                                                                size=0.3, 
+                                                                linetype="blank"), 
+                                panel.border = element_blank(), 
+                                legend.position = "bottom"
+                              )
+                            )
+)
+p.bias1.extra <- p.bias1.extra + guides(size=F)
+p.bias1.extra
+rm(col)
+```
+
+```{r}
+if(params$save.plot) {
+  ggsave("bias1_extra.tiff", plot = p.bias1.extra, width=7, height=7,dpi = 600, compression ="lzw")
+} 
+```
+
+##### Bias of $\hat\beta_2$
+
+```{r}
+kable(BIAS2_tab)
+```
+
+```{r}
+BIAS2_tab<-show_tab(methods=c("ML", "FL", "LXPMLE", "BDA", "XP"), stat="bias2", multi=1) %>% data.frame()
+
+bias2.plot <- merge(BIAS2_tab, Sep_tab) %>%
+  mutate(ML = ifelse(Sep_caused_beta2 <= 5, ML, NA)) %>%  #ML only when separation rate under 5%
+  select(-epv, -Sep_caused_beta2, -Sep_caused_beta1)
+
+names(bias2.plot)[names(bias2.plot)=="ncov"] <- "k"
+
+col <- col_all[c("ML", "FL", "XP","BDA")]
+plot_data <- nested_loop_base_data(
+    resdf = bias2.plot[,!names(bias2.plot) %in% c("LXPMLE")],
+    x = "beta1", steps = c("n"),
+    #replace_labels = labs,
+    grid_rows = "k", 
+    design_type = "partial"
+    ) %>% 
+        nested_loop_paramsteps_data(
+            steps_y_base = 0,
+            steps_y_height = 0.005
+        )
+plot_data$stepdf %<>% 
+    mutate(
+        y_coord = ifelse(facet == 3, y_coord -0.02, y_coord)
+    )
+
+p.bias2 <- nested_loop_base_plot(
+    y_name = TeX("$Bias(\\beta_2)$"),
+    x_name = TeX("$\\beta_1$"),
+    plot_data,
+    colors = col, 
+    legend_breaks = c("ML", "FL", "XP", "BDA"),
+    grid_scales = "free_y"
+) %>% 
+    nested_loop_paramsteps_plot(
+        plot_data, 
+        steps_values_annotate = TRUE,
+        steps_names_annotate = F, 
+        steps_annotation_size = 3.5
+    ) %>% 
+    add_processing(
+        list(
+            add_custom_theme = list(
+                axis.text.x = element_text(angle = -90,
+                                           vjust = 0.5,
+                                           size = 10),
+                strip.background = element_rect(color="black",
+                                                fill = "#FFFFFF",
+                                                size=0.3,
+                                                linetype="blank"),
+                panel.border = element_blank(),
+                legend.position = "bottom"
+            )
+        )
+    )
+p.bias2 <- p.bias2 + guides(size=F)
+p.bias2
+rm(col)
+```
+
+```{r}
+if(params$save.plot) {
+  ggsave("bias2_main.tiff", plot = p.bias2, width=7, height=7,dpi = 600, compression ="lzw")
+} 
+```
+
+```{r}
+col <- col_all[c("FL", "LXPMLE")]
+plot_data <- nested_loop_base_data(
+    resdf = bias2.plot[,c(1,2,3,5,6)],
+    x = "beta1", steps = c("n"),
+    #replace_labels = labs,
+    grid_rows = "k", 
+    design_type = "partial"
+    ) %>% 
+        nested_loop_paramsteps_data(
+            steps_y_base = 0,
+            steps_y_height = 0.005
+        )
+plot_data$stepdf %<>% 
+    mutate(
+        y_coord = ifelse(facet == 3, y_coord -0.02, y_coord)
+    )
+
+p.bias2.extra <- nested_loop_base_plot(
+    y_name = TeX("$Bias(\\beta_2)$"),
+    x_name = TeX("$\\beta_1$"),
+    plot_data,
+    colors = col, 
+    grid_scales = "free_y"
+) %>% 
+    nested_loop_paramsteps_plot(
+        plot_data, 
+        steps_values_annotate = TRUE,
+        steps_names_annotate = F, 
+        steps_annotation_size = 3.5
+    ) %>% 
+    add_processing(
+        list(
+            add_custom_theme = list(
+                axis.text.x = element_text(angle = -90,
+                                           vjust = 0.5,
+                                           size = 10),
+                strip.background = element_rect(color="black",
+                                                fill = "#FFFFFF",
+                                                size=0.3,
+                                                linetype="blank"),
+                panel.border = element_blank(),
+                legend.position = "bottom"
+            )
+        )
+    )
+p.bias2.extra <- p.bias2.extra + guides(size=F)
+p.bias2.extra
+rm(col)
+```
+
+```{r}
+if(params$save.plot) {
+  ggsave("bias2_extra.tiff", plot = p.bias2.extra, width=7, height=7,dpi = 600, compression ="lzw")
+} 
+```
+
+
+#### RMSE
+
+The subsequent tables show the root mean squared error of estimates of $\beta$, multiplied by the square root of the sample size $n$ to improve comparability across rows, and by 100 to improve readability. 
+
+
+##### RMSE * sqrt(n) of $\beta_1$
+
+```{r}
+kable(RMSE1_tab)
+```
+
+```{r}
+RMSE1_tab <- show_tab(methods=c("ML", "FL", "LXPMLE", "XP", "BDA"), stat="rmsen1", multi=1)
+
+# rmse1.plot <- merge(RMSE1_tab, Sep_tab) %>% 
+#   mutate(ML = ifelse(Sep_caused_beta1 <= 5, ML, NA)) %>%  #ML only when separation rate under 5% 
+#   select(-epv, -Sep_caused_beta2, -Sep_caused_beta1)
+
+
+rmse1.plot <- merge(RMSE1_tab, Sep_tab) %>% 
+  mutate(ML = ifelse(ML <= 50, ML, NA)) %>%  #ML only if <=50 
+  select(-epv, -Sep_caused_beta2, -Sep_caused_beta1)
+
+
+names(rmse1.plot)[names(rmse1.plot)=="ncov"] <- "k"
+
+col <- col_all[c("ML", "FL", "XP", "BDA")]
+p.rmse1 <- nested_loop_plot(resdf = rmse1.plot[,-6],
+                            x = "beta1", steps = c("n"),
+                            grid_rows = "k",
+                            colors=col,
+                            legend_breaks = c("ML", "FL", "XP", "BDA"),
+                            steps_values_annotate = TRUE,
+                            steps_annotation_size=3.5,
+                            steps_names_annotate=F,
+                            #replace_labels = labs,
+                            steps_y_base=-1,
+                            steps_y_height = 0.20,
+                            #grid_scales = "free_y",
+                            y_name = TeX("$RMSE(\\beta_1) \\times \\sqrt{n}$"),
+                            x_name = TeX("$\\beta_1$"),
+                            design_type = "partial",  
+                            post_processing = list(
+                              add_custom_theme = list(
+                                axis.text.x = element_text(angle = -90, 
+                                                           vjust = 0.5, 
+                                                           size = 10), 
+                                strip.background = element_rect(color="black",
+                                                                fill = "#FFFFFF",
+                                                                size=0.3, 
+                                                                linetype="blank"), 
+                                panel.border = element_blank(), 
+                                legend.position = "bottom"
+                              )
+                            )
+)
+p.rmse1 <- p.rmse1 + guides(size=F)
+p.rmse1
+rm(col)
+```
+
+```{r}
+if(params$save.plot) {
+  ggsave("rmse1.tiff", plot = p.rmse1, width=7, height=7,dpi = 600, compression ="lzw")
+} 
+```
+
+```{r}
+col <- col_all[c("FL", "LXPMLE")]
+p.rmse1.extra <- nested_loop_plot(resdf = rmse1.plot[,c(1,2,3,5,6)],
+                            x = "beta1", steps = c("n"),
+                            grid_rows = "k",
+                            colors=col,
+                            steps_values_annotate = TRUE,
+                            steps_annotation_size=3.5,
+                            steps_names_annotate=F,
+                            #replace_labels = labs,
+                            steps_y_base=-1,
+                            steps_y_height = 0.2,
+                            grid_scales = "free_y",
+                            y_name = TeX("$RMSE(\\beta_1) \\times \\sqrt{n}$"),
+                            x_name = TeX("$\\beta_1$"),
+                            design_type = "partial",  
+                            post_processing = list(
+                              add_custom_theme = list(
+                                axis.text.x = element_text(angle = -90, 
+                                                           vjust = 0.5, 
+                                                           size = 10), 
+                                strip.background = element_rect(color="black",
+                                                                fill = "#FFFFFF",
+                                                                size=0.3, 
+                                                                linetype="blank"), 
+                                panel.border = element_blank(), 
+                                legend.position = "bottom"
+                              )
+                            )
+)
+p.rmse1.extra <- p.rmse1.extra + guides(size=F)
+p.rmse1.extra
+rm(col)
+```
+```{r}
+if(params$save.plot) {
+  ggsave("rmse1_extra.tiff", plot = p.rmse1.extra, width=7, height=7,dpi = 600, compression ="lzw")
+} 
+```
+
+##### RMSE * sqrt(N) of $\beta_2$
+
+```{r}
+kable(RMSE2_tab)
+```
+
+```{r}
+RMSE2_tab <- show_tab(methods=c("ML", "FL", "LXPMLE", "XP", "BDA"), stat="rmsen2", multi=1)
+
+rmse2.plot <- merge(RMSE2_tab, Sep_tab) %>% 
+  mutate(ML = ifelse(Sep_caused_beta2 <= 5, ML, NA)) %>%  #ML only when separation rate under 5% 
+  select(-epv, -Sep_caused_beta2, -Sep_caused_beta1)
+
+names(rmse2.plot)[names(rmse2.plot)=="ncov"] <- "k"
+
+col <- col_all[c("ML", "FL",  "XP", "BDA")]
+plot_data <- nested_loop_base_data(
+    resdf = rmse2.plot[,-6],
+    x = "beta1", steps = c("n"),
+    #replace_labels = labs,
+    grid_rows = "k", 
+    design_type = "partial"
+    ) %>% 
+        nested_loop_paramsteps_data(
+            steps_y_base = 0,
+            steps_y_height = 0.050
+        )
+plot_data$stepdf %<>% 
+    mutate(
+        y_coord = ifelse(facet == 3, y_coord +5 , y_coord)
+    )
+
+p.rmse2 <- nested_loop_base_plot(
+    y_name = TeX("$RMSE(\\beta_2) \\times \\sqrt{n}$"),
+    x_name = TeX("$\\beta_1$"),
+    plot_data,
+    colors = col,
+    legend_breaks = c("ML", "FL", "XP", "BDA"),
+    grid_scales = "free_y"
+) %>% 
+    nested_loop_paramsteps_plot(
+        plot_data, 
+        steps_values_annotate = TRUE,
+        steps_names_annotate = F, 
+        steps_annotation_size = 3.5
+    ) %>% 
+    add_processing(
+        list(
+            add_custom_theme = list(
+                axis.text.x = element_text(angle = -90,
+                                           vjust = 0.5,
+                                           size = 10),
+                strip.background = element_rect(color="black",
+                                                fill = "#FFFFFF",
+                                                size=0.3,
+                                                linetype="blank"),
+                panel.border = element_blank(),
+                legend.position = "bottom"
+            )
+        )
+    )
+
+p.rmse2 <- p.rmse2 + guides(size=F)
+p.rmse2
+rm(col)
+```
+
+```{r}
+if(params$save.plot) {
+  ggsave("rmse2.tiff", plot = p.rmse1, width=7, height=7,dpi = 600, compression ="lzw")
+} 
+```
+
+```{r}
+col<- col_all[c("FL", "LXPMLE")]
+p.rmse2.extra <- nested_loop_plot(resdf = rmse2.plot[,c(1,2,3,5,6)],
+                            x = "beta1", steps = c("n"),
+                            grid_rows = "k",
+                            colors=col,
+                            steps_values_annotate = TRUE,
+                            steps_annotation_size=3.5,
+                            steps_names_annotate=F,
+                            #replace_labels = labs,
+                            steps_y_base=-1,
+                            steps_y_height = 0.20,
+                            #grid_scales = "free_y",
+                            y_name = TeX("$RMSE(\\beta_2) \\times \\sqrt{n}$"),
+                            x_name = TeX("$\\beta_1$"),
+                            design_type = "partial",  
+                            post_processing = list(
+                              add_custom_theme = list(
+                                axis.text.x = element_text(angle = -90, 
+                                                           vjust = 0.5, 
+                                                           size = 10), 
+                                strip.background = element_rect(color="black",
+                                                                fill = "#FFFFFF",
+                                                                size=0.3, 
+                                                                linetype="blank"), 
+                                panel.border = element_blank(), 
+                                legend.position = "bottom"
+                              )
+                            )
+)
+p.rmse2.extra <- p.rmse2.extra + guides(size=F)
+p.rmse2.extra
+rm(col)
+```
+
+```{r}
+if(params$save.plot) {
+  ggsave("rmse2_extra.tiff", plot = p.rmse2.extra, width=7, height=7,dpi = 600, compression ="lzw")
+} 
+```
+
+#### Coverage
+
+
+##### Left/right-tailed coverage of confidence intervals for $\beta_1$
+
+To improve readability, we multiplied coverage probabilities by 1000 and subtracted the target value of 975 for one-tailed coverage. Negative values indicate undercoverage per 1,000 studies, positive values indicate overcoverage per 1,000 studies. Perfect coverage is given by 0. +
+
+In the following plots all values below a threshold of 0.9 are not shown. 
+
+```{r}
+kable(data.frame(leftcov1_tab[,c(1,3,4)], lrcov1_tab))
+```
+
+```{r}
+min.all <- 0.9
+mirror <- function(x, mid=min.all) {
+  lower <- mid-(1-mid)
+  range <- 1-lower
+  y <- lower+1-x
+  return(y)
+}
+
+leftcov1_tab<-show_tab(methods=c("ML","FL","XP","XP:mid-p","BDA"), stat="leftcov1") %>% data.frame() %>% 
+  mutate(ML = ifelse(ML < 0.90, NA, ML))
+leftcov1_tab %<>% mutate(across(c(ML, FL, BDA,XP,XP.mid.p), ~mirror(.x)))
+rightcov1_tab<-show_tab(methods=c("ML","FL","XP","XP:mid-p","BDA"), stat="rightcov1") %>% data.frame() %>% 
+  mutate(ML = ifelse(ML < 0.90, NA, ML))
+colnames(leftcov1_tab) <- c(colnames(leftcov1_tab)[1:4],paste0("left_",colnames(leftcov1_tab)[5:9]))
+colnames(rightcov1_tab) <- c(colnames(rightcov1_tab)[1:4],paste0("right_",colnames(rightcov1_tab)[5:9]))
+cov1.plot <- cbind(leftcov1_tab, rightcov1_tab[,5:9]) %>% select(-epv)
+names(cov1.plot)[names(cov1.plot)=="ncov"] <- "k"
+
+y.breaks <- seq(1-2*(1-min.all),1,0.025)
+if(!(min.all %in% y.breaks)) y.breaks <- sort(c(min.all,seq(1-2*(1-min.all),1,0.025)))
+
+y.labs <- c(sort(y.breaks[which(y.breaks==min.all):length(y.breaks)], decreasing = T), y.breaks[(which(y.breaks==min.all)+1):length(y.breaks)])
+
+y.labs <- 100*y.labs
+
+col <- col_all[c("ML","FL","XP","XP:mid-p","BDA")]
+col <- col[sort(names(col))]
+p.coverage1 <- nested_loop_plot(
+    cov1.plot, x = "beta1", grid_rows = "k", steps = "n", 
+    colors = col,
+    #replace_labels = labs,
+    legend_breaks = c("left_ML", "left_FL", "left_XP", "left_XP.mid.p", "left_BDA"),
+    legend_labels = c("ML", "FL", "XP", "XP:mid-p", "BDA"),
+    steps_y_base = min.all - 0.1, steps_y_height = 0.005, 
+    steps_values_annotate = TRUE, 
+    steps_names_annotate=F,
+    x_name = TeX("$\\beta_1$"),
+    steps_annotation_size = 3,
+    y_name = "Coverage (x 100)",
+    y_breaks=y.breaks,
+    y_labels=y.labs,
+    design_type = 'partial',
+    post_processing = list(
+        add_custom_theme = list(axis.text.x = element_text(angle = -90, 
+                                                           vjust = 0.5, 
+                                                           size = 10), 
+                                strip.background = element_rect(color="black",
+                                                                fill = "#FFFFFF",
+                                                                size=0.3, 
+                                                                linetype="blank"), 
+                                panel.border = element_blank(), 
+                                legend.position = "bottom"),
+        add_abline = list(intercept = mirror(0.975), slope = 0, linetype = "dashed"),
+        add_abline = list(intercept = 0.975, slope = 0, linetype = "dashed"), 
+        add_abline = list(intercept = min.all, slope = 0, linetype = "dotted")
+    )
+)
+p.coverage1
+rm(col)
+```
+
+```{r}
+if(params$save.plot) {
+  ggsave("Figure3.tiff", plot = p.coverage1, width=7, height=7,dpi = 600, compression ="lzw")
+} 
+```
+
+```{r}
+min.all <- 0.9
+
+leftcov1_tab<-show_tab(methods=c("LXPMLE","FL"), stat="leftcov1") %>% data.frame() %>% 
+  mutate(LXPMLE = ifelse(LXPMLE < 0.90, NA, LXPMLE))
+leftcov1_tab %<>% mutate(across(c(LXPMLE, FL), ~mirror(.x)))
+rightcov1_tab<-show_tab(methods=c("LXPMLE","FL"), stat="rightcov1") %>% data.frame() %>% 
+  mutate(LXPMLE = ifelse(LXPMLE < 0.90, NA, LXPMLE))
+colnames(leftcov1_tab) <- c(colnames(leftcov1_tab)[1:4],paste0("left_",colnames(leftcov1_tab)[5:6]))
+colnames(rightcov1_tab) <- c(colnames(rightcov1_tab)[1:4],paste0("right_",colnames(rightcov1_tab)[5:6]))
+cov1.plot <- cbind(leftcov1_tab, rightcov1_tab[,5:6]) %>% select(-epv)
+
+
+names(cov1.plot)[names(cov1.plot)=="ncov"] <- "k"
+
+y.breaks <- seq(1-2*(1-min.all),1,0.025)
+if(!(min.all %in% y.breaks)) y.breaks <- sort(c(min.all,seq(1-2*(1-min.all),1,0.025)))
+
+
+y.labs <- c(sort(y.breaks[which(y.breaks==min.all):length(y.breaks)], decreasing = T), y.breaks[(which(y.breaks==min.all)+1):length(y.breaks)])
+y.labs <- 100*y.labs
+
+col <- col_all[c("FL", "LXPMLE")]
+col <- col[sort(names(col))]
+p.coverage1.extra <- nested_loop_plot(
+    cov1.plot, x = "beta1", grid_rows = "k", steps = "n", 
+    colors = col,
+    #replace_labels = labs,
+    legend_breaks = c("left_LXPMLE", "left_FL"),
+    legend_labels = c("LXPMLE", "FL"),
+    steps_y_base = min.all - 0.1, steps_y_height = 0.005, 
+    steps_values_annotate = TRUE, 
+    steps_names_annotate=F,
+    x_name = TeX("$\\beta_1$"),
+    steps_annotation_size = 3,
+    y_name = TeX("Coverage (x 100) for $\\beta_1$"),
+    y_breaks=y.breaks,
+    y_labels=y.labs,
+    design_type = 'partial',
+    post_processing = list(
+        add_custom_theme = list(axis.text.x = element_text(angle = -90, 
+                                                           vjust = 0.5, 
+                                                           size = 10), 
+                                strip.background = element_rect(color="black",
+                                                                fill = "#FFFFFF",
+                                                                size=0.3, 
+                                                                linetype="blank"), 
+                                panel.border = element_blank(), 
+                                legend.position = "bottom"),
+        add_abline = list(intercept = mirror(0.975), slope = 0, linetype = "dashed"),
+        add_abline = list(intercept = 0.975, slope = 0, linetype = "dashed"), 
+        add_abline = list(intercept = min.all, slope = 0, linetype = "dotted")
+    )
+)
+p.coverage1.extra
+rm(col)
+```
+
+```{r}
+if(params$save.plot) {
+  ggsave("coverage1_extra.tiff", plot = p.coverage1.extra, width=7, height=7,dpi = 600, compression ="lzw")
+} 
+```
+
+##### Left/right-tailed coverage of confidence intervals for $\beta_2$
+
+```{r}
+kable(data.frame(leftcov2_tab[,c(1,3,4)], lrcov2_tab))
+```
+
+```{r}
+min.all <- 0.90
+
+leftcov2_tab<-show_tab(methods=c("ML","FL","XP","XP:mid-p","BDA"), stat="leftcov2") %>% data.frame() %>% 
+  mutate(ML = ifelse(ML < 0.90, NA, ML))
+leftcov2_tab %<>% mutate(across(c(ML, FL, BDA,XP,XP.mid.p), ~mirror(.x)))
+rightcov2_tab<-show_tab(methods=c("ML","FL","XP","XP:mid-p","BDA"), stat="rightcov2") %>% data.frame() %>% 
+  mutate(ML = ifelse(ML < 0.90, NA, ML))
+colnames(leftcov2_tab) <- c(colnames(leftcov2_tab)[1:4],paste0("left_",colnames(leftcov2_tab)[5:9]))
+colnames(rightcov2_tab) <- c(colnames(rightcov2_tab)[1:4],paste0("right_",colnames(rightcov2_tab)[5:9]))
+cov2.plot <- cbind(leftcov2_tab, rightcov2_tab[,5:9]) %>% select(-epv)
+
+
+names(cov2.plot)[names(cov2.plot)=="ncov"] <- "k" 
+
+y.breaks <- seq(1-2*(1-min.all),1,0.025)
+if(!(min.all %in% y.breaks)) y.breaks <- sort(c(min.all,seq(1-2*(1-min.all),1,0.025)))
+
+
+y.labs <- c(sort(y.breaks[which(y.breaks==min.all):length(y.breaks)], decreasing = T), y.breaks[(which(y.breaks==min.all)+1):length(y.breaks)])
+y.labs <- 100*y.labs
+
+col <- col_all[c("ML","FL","XP","XP:mid-p","BDA")]
+col <- col[sort(names(col))]
+p.coverage2 <- nested_loop_plot(
+    cov2.plot, x = "beta1", grid_rows = "k", steps = "n", 
+    colors = col,
+    #replace_labels = labs,
+    legend_breaks = c("left_ML", "left_FL", "left_XP", "left_XP.mid.p", "left_BDA"),
+    legend_labels = c("ML", "FL", "XP", "XP:mid-p", "BDA"),
+    steps_y_base = min.all - 0.1, steps_y_height = 0.005, 
+    steps_values_annotate = TRUE,
+    steps_names_annotate=F,
+    x_name = TeX("$\\beta_1$"),
+    steps_annotation_size = 3,
+    y_name = "Coverage (x 100)",
+    y_breaks=y.breaks,
+    y_labels=y.labs,
+    design_type = 'partial',
+    post_processing = list(
+        add_custom_theme = list(axis.text.x = element_text(angle = -90, 
+                                                           vjust = 0.5, 
+                                                           size = 10), 
+                                strip.background = element_rect(color="black",
+                                                                fill = "#FFFFFF",
+                                                                size=0.3, 
+                                                                linetype="blank"), 
+                                panel.border = element_blank(), 
+                                legend.position = "bottom"),
+        add_abline = list(intercept = mirror(0.975), slope = 0, linetype = "dashed"),
+        add_abline = list(intercept = 0.975, slope = 0, linetype = "dashed"), 
+        add_abline = list(intercept = min.all, slope = 0, linetype = "dotted")
+    )
+)
+p.coverage2
+rm(col)
+```
+
+```{r}
+if(params$save.plot) {
+  ggsave("coverage2.tiff", plot = p.coverage2, width=7, height=7,dpi = 600, compression ="lzw")
+} 
+```
+
+```{r}
+min.all <- 0.9
+
+leftcov2_tab<-show_tab(methods=c("LXPMLE","FL"), stat="leftcov2") %>% data.frame() %>% 
+  mutate(LXPMLE = ifelse(LXPMLE < 0.90, NA, LXPMLE))
+leftcov2_tab %<>% mutate(across(c(LXPMLE, FL), ~mirror(.x)))
+rightcov2_tab<-show_tab(methods=c("LXPMLE","FL"), stat="rightcov2") %>% data.frame() %>% 
+  mutate(LXPMLE = ifelse(LXPMLE < 0.90, NA, LXPMLE))
+colnames(leftcov2_tab) <- c(colnames(leftcov2_tab)[1:4],paste0("left_",colnames(leftcov2_tab)[5:6]))
+colnames(rightcov2_tab) <- c(colnames(rightcov2_tab)[1:4],paste0("right_",colnames(rightcov2_tab)[5:6]))
+cov2.plot <- cbind(leftcov2_tab, rightcov2_tab[,5:6]) %>% select(-epv)
+names(cov2.plot)[names(cov2.plot)=="ncov"] <- "k"
+
+y.breaks <- seq(1-2*(1-min.all),1,0.025)
+if(!(min.all %in% y.breaks)) y.breaks <- sort(c(min.all,seq(1-2*(1-min.all),1,0.025)))
+
+y.labs <- c(sort(y.breaks[which(y.breaks==min.all):length(y.breaks)], decreasing = T), y.breaks[(which(y.breaks==min.all)+1):length(y.breaks)])
+y.labs <- 100*y.labs
+
+col <- col_all[c("FL", "LXPMLE")]
+col <- col[sort(names(col))]
+p.coverage2.extra <- nested_loop_plot(
+    cov2.plot, x = "beta1", grid_rows = "k", steps = "n", 
+    colors = col[1:2],
+    #replace_labels = labs,
+    legend_breaks = c("left_LXPMLE", "left_FL"),
+    legend_labels = c("LXPMLE", "FL"),
+    steps_y_base = min.all - 0.1, steps_y_height = 0.005, 
+    steps_values_annotate = TRUE, 
+    steps_names_annotate=F,
+    x_name = TeX("$\\beta_1$"),
+    steps_annotation_size = 3,
+    y_name = TeX("Coverage (x 100) for $\\beta_2$"),
+    y_breaks=y.breaks,
+    y_labels=y.labs,
+    design_type = 'partial',
+    post_processing = list(
+        add_custom_theme = list(axis.text.x = element_text(angle = -90, 
+                                                           vjust = 0.5, 
+                                                           size = 10), 
+                                strip.background = element_rect(color="black",
+                                                                fill = "#FFFFFF",
+                                                                size=0.3, 
+                                                                linetype="blank"), 
+                                panel.border = element_blank(), 
+                                legend.position = "bottom"),
+        add_abline = list(intercept = mirror(0.975), slope = 0, linetype = "dashed"),
+        add_abline = list(intercept = 0.975, slope = 0, linetype = "dashed"), 
+        add_abline = list(intercept = min.all, slope = 0, linetype = "dotted")
+    )
+)
+p.coverage2.extra
+rm(col)
+```
+
+```{r}
+if(params$save.plot) {
+  ggsave("coverage2_extra.tiff", plot = p.coverage2.extra, width=7, height=7,dpi = 600, compression ="lzw")
+} 
+```
+
+#### Power
+
+##### Power to exclude $\beta_1=0$ from CI
+
+```{r}
+kable(power1_tab)
+```
+
+```{r}
+power1_tab<-show_tab(methods=c("ML","FL","XP","XP:mid-p","BDA"), stat="power1", multi=100)  %>% data.frame() %>% select(-epv)
+
+names(power1_tab)[names(power1_tab)=="ncov"] <- "k"
+
+col <- col_all[c("ML","FL","XP","XP:mid-p","BDA")]
+p.power1 <- nested_loop_plot(
+    power1_tab, x = "beta1", grid_rows = "k", steps = "n", 
+    colors = col,
+    #replace_labels = labs,
+    legend_breaks = c("ML", "FL", "XP", "XP.mid.p", "BDA"),
+    legend_labels = c("ML", "FL", "XP", "XP:mid-p", "BDA"),
+    steps_y_base = -15,
+    steps_y_height = 4, 
+    steps_values_annotate = TRUE, 
+    steps_names_annotate=F,
+    x_name = TeX("$\\beta_1$"),
+    steps_annotation_size = 3,
+    y_name = "Power",
+    design_type = 'partial',
+    post_processing = list(
+        add_custom_theme = list(axis.text.x = element_text(angle = -90, 
+                                                           vjust = 0.5, 
+                                                           size = 10), 
+                                strip.background = element_rect(color="black",
+                                                                fill = "#FFFFFF",
+                                                                size=0.3, 
+                                                                linetype="blank"), 
+                                panel.border = element_blank(), 
+                                legend.position = "bottom"),
+        add_abline = list(intercept = 5, slope = 0, linetype = "dotted")
+    )
+)
+p.power1 <- p.power1 + guides(size=F)
+p.power1
+rm(col)
+```
+```{r}
+if(params$save.plot) {
+  ggsave("power1.tiff", plot = p.power1, width=7, height=7,dpi = 600, compression ="lzw")
+} 
+```
+
+```{r}
+power1_tab<-show_tab(methods=c("FL","LXPMLE"), stat="power1", multi=100)  %>% data.frame() %>% select(-epv)
+names(power1_tab)[names(power1_tab)=="ncov"] <- "k"
+
+col <- col_all[c("FL", "LXPMLE")]
+p.power1.extra <- nested_loop_plot(
+    power1_tab, x = "beta1", grid_rows = "k", steps = "n", 
+    colors = col,
+    #replace_labels = labs,
+    steps_y_base = -15,
+    steps_y_height = 4, 
+    steps_values_annotate = TRUE, 
+    steps_names_annotate=F,
+    x_name = TeX("$\\beta_1$"),
+    steps_annotation_size = 3,
+    y_name = TeX("Power (x 100) to exclude $\\beta_1=0$"),
+    design_type = 'partial',
+    post_processing = list(
+        add_custom_theme = list(axis.text.x = element_text(angle = -90, 
+                                                           vjust = 0.5, 
+                                                           size = 10), 
+                                strip.background = element_rect(color="black",
+                                                                fill = "#FFFFFF",
+                                                                size=0.3, 
+                                                                linetype="blank"), 
+                                panel.border = element_blank(), 
+                                legend.position = "bottom"),
+        add_abline = list(intercept = 5, slope = 0, linetype = "dotted")
+    )
+)
+p.power1.extra <- p.power1.extra + guides(size=F)
+p.power1.extra
+rm(col)
+```
+
+```{r}
+if(params$save.plot) {
+  ggsave("power1_extra.tiff", plot = p.power1.extra, width=7, height=7,dpi = 600, compression ="lzw")
+} 
+```
+
+##### Power to exclude $\beta_2=0$ from CI
+
+Power has been multiplied by 100 to improve readability.
+
+```{r}
+kable(power2_tab)
+```
+
+```{r}
+power2_tab<-show_tab(methods=c("ML", "FL", "XP", "XP:mid-p", "BDA"), stat="power2", multi=100)  %>% data.frame() %>% select(-epv)
+names(power2_tab)[names(power2_tab)=="ncov"] <- "k"
+
+
+col<- col_all[c("ML", "FL", "XP", "XP:mid-p", "BDA")]
+p.power2 <- nested_loop_plot(
+    power2_tab, x = "beta1", grid_rows = "k", steps = "n", 
+    colors = col,
+    #replace_labels = labs,
+    legend_breaks = c("ML", "FL", "XP", "XP.mid.p", "BDA"),
+    legend_labels = c("ML", "FL", "XP", "XP:mid-p", "BDA"),
+    steps_y_base = -15,
+    steps_y_height = 4, 
+    steps_values_annotate = TRUE, 
+    steps_names_annotate=F,
+    x_name = TeX("$\\beta_1$"),
+    steps_annotation_size = 3,
+    grid_scales="free",
+    y_name = "Power",
+    design_type = 'partial',
+    post_processing = list(
+        add_custom_theme = list(axis.text.x = element_text(angle = -90, 
+                                                           vjust = 0.5, 
+                                                           size = 10), 
+                                strip.background = element_rect(color="black",
+                                                                fill = "#FFFFFF",
+                                                                size=0.3, 
+                                                                linetype="blank"), 
+                                panel.border = element_blank(), 
+                                legend.position = "bottom"),
+        add_abline = list(intercept = 5, slope = 0, linetype = "dotted")
+    )
+)
+p.power2 <- p.power2 + guides(size=F)
+p.power2
+rm(col)
+```
+```{r}
+if(params$save.plot) {
+  ggsave("power2.tiff", plot = p.power2, width=7, height=7,dpi = 600, compression ="lzw")
+} 
+```
+
+```{r}
+power2_tab<-show_tab(methods=c("FL","LXPMLE"), stat="power2", multi=100)  %>% data.frame() %>% select(-epv)
+names(power2_tab)[names(power2_tab)=="ncov"] <- "k"
+
+col <- col_all[c("FL", "LXPMLE")]
+p.power2.extra <- nested_loop_plot(
+    power2_tab, x = "beta1", grid_rows = "k", steps = "n", 
+    colors = col,
+    #replace_labels = labs,
+    steps_y_base = -15,
+    steps_y_height = 4, 
+    steps_values_annotate = TRUE, 
+    x_name = TeX("$\\beta_1$"),
+    steps_annotation_size = 3,
+    steps_names_annotate=F,
+    y_name = TeX("Power (x 100) to exclude $\\beta_2=0$"),
+    design_type = 'partial',
+    post_processing = list(
+        add_custom_theme = list(axis.text.x = element_text(angle = -90, 
+                                                           vjust = 0.5, 
+                                                           size = 10), 
+                                strip.background = element_rect(color="black",
+                                                                fill = "#FFFFFF",
+                                                                size=0.3, 
+                                                                linetype="blank"), 
+                                panel.border = element_blank(), 
+                                legend.position = "bottom"),
+        add_abline = list(intercept = 0, slope = 0, linetype = "dotted")
+    )
+)
+p.power2.extra <- p.power2.extra + guides(size=F)
+p.power2.extra
+rm(col)
+```
+
+```{r}
+if(params$save.plot) {
+  ggsave("power2_extra.tiff", plot = p.power2.extra, width=7, height=7,dpi = 600, compression ="lzw")
+} 
+```
+
+
+#### Width
+
+##### Median width of CI for $\beta_1$
+
+The median width of confidence intervals has been multiplied by 100.
+
+```{r}
+kable(width1_tab)
+```
+
+In the plots below median width of confidence intervals is only shown if percentage of datasets where MUE replaced ML-estimator is smaller than 50%.
+
+```{r}
+width1_tab<-show_tab(methods=c("ML","FL","XP","XP:mid-p","BDA"), stat="width1", multi=1)
+width1.plot <- merge(width1_tab, PoissonF_sep_nonconv %>% select(MUE1,n,ncov,truebeta1) %>% mutate(beta1=round(truebeta1,2)) %>% data.frame() %>% filter(!is.na(MUE1)), all.x=T) %>% data.frame() %>%
+  mutate(XP = ifelse((MUE1 < 0.5 | is.na(MUE1)), XP, NA), 
+         XP.mid.p = ifelse((MUE1 <0.5 | is.na(MUE1)), XP.mid.p, NA),
+         ML = ifelse((MUE1 <0.5 | is.na(MUE1)), ML, NA), 
+         ML = ifelse(ML<1000, ML, NA)) %>%
+  select(-truebeta1, -epv, -MUE1)
+names(width1.plot)[names(width1.plot)=="ncov"] <- "k"
+
+
+col <- col_all[c("ML","FL","XP","XP:mid-p","BDA")]
+p.width1 <- nested_loop_plot(
+    width1.plot, x = "beta1", grid_rows = "k", steps = "n", 
+    colors = col,
+    #replace_labels = labs,
+    legend_breaks = c("ML", "FL", "XP", "XP.mid.p", "BDA"),
+    legend_labels = c("ML", "FL", "XP", "XP:mid-p", "BDA"),
+    steps_y_base = -1,
+    steps_y_height = 0.20, 
+    steps_values_annotate = TRUE,
+    steps_names_annotate=F,
+    x_name = TeX("$\\beta_1$"),
+    steps_annotation_size = 3,
+    #grid_scales="free",
+    #ylim=c(0,NA),
+    y_name = "Width",
+    design_type = 'partial',
+    post_processing = list(
+        add_custom_theme = list(axis.text.x = element_text(angle = -90, 
+                                                           vjust = 0.5, 
+                                                           size = 10), 
+                                strip.background = element_rect(color="black",
+                                                                fill = "#FFFFFF",
+                                                                size=0.3, 
+                                                                linetype="blank"), 
+                                panel.border = element_blank(), 
+                                legend.position = "bottom")#,
+        #add_abline = list(intercept = 0, slope = 0, linetype = "dashed")
+    )
+)
+p.width1 <- p.width1 + guides(size=F)
+p.width1
+rm(col)
+```
+
+```{r}
+if(params$save.plot) {
+  ggsave("width1.tiff", plot = p.width1, width=7, height=7,dpi = 600, compression ="lzw")
+} 
+```
+
+```{r}
+width1_tab<-show_tab(methods=c("FL", "LXPMLE"), stat="width1", multi=1) %>% data.frame() %>% select(-epv)
+names(width1_tab)[names(width1_tab)=="ncov"] <- "k"
+
+col <- col_all[c("FL", "LXPMLE")]
+p.width1.extra <- nested_loop_plot(
+    width1_tab, x = "beta1", grid_rows = "k", steps = "n", 
+    colors = col,
+    #replace_labels = labs,
+    steps_y_base = -1,
+    steps_y_height = 0.10, 
+    steps_values_annotate = TRUE, 
+    steps_names_annotate=F,
+    x_name = TeX("$\\beta_1$"),
+    steps_annotation_size = 3,
+    #grid_scales="free",
+    y_name = TeX("Median width of CI for $\\beta_1$"),
+    design_type = 'partial',
+    post_processing = list(
+        add_custom_theme = list(axis.text.x = element_text(angle = -90, 
+                                                           vjust = 0.5, 
+                                                           size = 10), 
+                                strip.background = element_rect(color="black",
+                                                                fill = "#FFFFFF",
+                                                                size=0.3, 
+                                                                linetype="blank"), 
+                                panel.border = element_blank(), 
+                                legend.position = "bottom")#,
+        #add_abline = list(intercept = 0, slope = 0, linetype = "dashed")
+    )
+)
+p.width1.extra <- p.width1.extra + guides(size=F)
+p.width1.extra
+rm(col)
+```
+
+```{r}
+if(params$save.plot) {
+  ggsave("width1_extra.tiff", plot = p.width1.extra, width=7, height=7,dpi = 600, compression ="lzw")
+} 
+```
+
+##### Median width of CI for $\beta_2$
+
+```{r}
+kable(width2_tab)
+```
+
+```{r}
+width2_tab<-show_tab(methods=c("ML","FL","XP","XP:mid-p","BDA"), stat="width2", multi=1) %>% data.frame() %>% select(-epv)
+names(width2_tab)[names(width2_tab)=="ncov"] <- "k"
+
+col <- col_all[c("ML","FL","XP","XP:mid-p","BDA")]
+p.width2 <- nested_loop_plot(
+    width2_tab, x = "beta1", grid_rows = "k", steps = "n", 
+    colors = col,
+    #replace_labels = labs,
+    legend_breaks = c("ML", "FL", "XP", "XP.mid.p", "BDA"),
+    legend_labels = c("ML", "FL", "XP", "XP:mid-p", "BDA"),
+    steps_y_base = -0.50,
+    steps_y_height = 0.10, 
+    steps_values_annotate = TRUE, 
+    steps_names_annotate=F,
+    x_name = TeX("$\\beta_1$"),
+    steps_annotation_size = 3,
+    grid_scales="free",
+    y_name = "Width",
+    design_type = 'partial',
+    post_processing = list(
+        add_custom_theme = list(axis.text.x = element_text(angle = -90, 
+                                                           vjust = 0.5, 
+                                                           size = 10), 
+                                strip.background = element_rect(color="black",
+                                                                fill = "#FFFFFF",
+                                                                size=0.3, 
+                                                                linetype="blank"), 
+                                panel.border = element_blank(), 
+                                legend.position = "bottom")#,
+        #add_abline = list(intercept = 0, slope = 0, linetype = "dashed")
+    )
+)
+p.width2 <- p.width2 + guides(size=F)
+p.width2
+rm(col)
+```
+
+```{r}
+if(params$save.plot) {
+  ggsave("width2.tiff", plot = p.width2, width=7, height=7,dpi = 600, compression ="lzw")
+} 
+```
+
+```{r}
+width2_tab<-show_tab(methods=c("FL", "LXPMLE"), stat="width2", multi=1) %>% data.frame() %>% select(-epv)
+names(width2_tab)[names(width2_tab)=="ncov"] <- "k"
+
+col <- col_all[c("FL", "LXPMLE")]
+p.width2.extra <- nested_loop_plot(
+    width2_tab, x = "beta1", grid_rows = "k", steps = "n", 
+    colors = col,
+    #replace_labels = labs,
+    steps_y_base = -1,
+    steps_y_height = 0.10, 
+    steps_values_annotate = TRUE, 
+    steps_names_annotate=F,
+    x_name = TeX("$\\beta_1$"),
+    steps_annotation_size = 3,
+    #grid_scales="free",
+    y_name = TeX("Median width of CI for $\\beta_2$"),
+    design_type = 'partial',
+    post_processing = list(
+        add_custom_theme = list(axis.text.x = element_text(angle = -90, 
+                                                           vjust = 0.5, 
+                                                           size = 10), 
+                                strip.background = element_rect(color="black",
+                                                                fill = "#FFFFFF",
+                                                                size=0.3, 
+                                                                linetype="blank"), 
+                                panel.border = element_blank(), 
+                                legend.position = "bottom")#,
+        #add_abline = list(intercept = 0, slope = 0, linetype = "dashed")
+    )
+)
+p.width2.extra <- p.width2.extra + guides(size=F)
+p.width2.extra
+rm(col)
+```
+
+```{r}
+if(params$save.plot) {
+  ggsave("width2_extra.tiff", plot = p.width2.extra, width=7, height=7,dpi = 600, compression ="lzw")
+} 
+```
