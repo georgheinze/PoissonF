@@ -11,12 +11,12 @@ The SAS simulation to be executable requires a SAS installation and folder struc
 * PoissonF\Simulation study\Follow-up time batch\run_simu_EX_ncov5.sas
 * PoissonF\Simulation study\Follow-up time batch\run_simu_EX_ncov10.sas
 
-Githubpath is the path to the code and to the place where results files will be stored (in csv format),
-Localpath is the path to a folder where SAS results files will be stored (in sas7bdat format).
+*Githubpath* is the path to the code and to the place where results files will be stored (in csv format),
+*Localpath* is the path to a folder where SAS results files will be stored (in sas7bdat format).
 
 ## 2. Run R program to generate data
 
-Run PoissonF\Simulation study\Follow-up time batch\FIRTHPoisson_simulatoR_FUT_Rev4.r. This code references to the 'simdata' R package which is available at https://github.com/matherealize/simdata.
+Run 'PoissonF\Simulation study\Follow-up time batch\FIRTHPoisson_simulatoR_FUT_Rev4.r'. This code references to the 'simdata' R package which is available at https://github.com/matherealize/simdata.
 
 Each scenario is defined by an approximate event rate of 0.1,  number of covariates (2, 5 or 10), beta1 (9 equidistant values from -log(16) to log(16)), and sample size (such that events per variable ratios of approximately 3, 5, and 10 result). For each of these 81 scenarios, the R program will create 1 big data set in csv format containing the simulated data sets 1-10000. It will also create a file with the intercepts (and beta1, beta2) iteratively found to create an event rate of approximately 0.10.
 
