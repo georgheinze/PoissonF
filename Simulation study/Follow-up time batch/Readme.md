@@ -3,11 +3,12 @@
 ## 1. Set paths correctly in the following files:
 
 * PoissonF\Simulation study\Follow-up time batch\FIRTHPoisson_simulatoR_FUT_Rev4.r
-* PoissonF\Simulation study\Follow-up time batch\run_simu_FUT_N60.sas
-* PoissonF\Simulation study\Follow-up time batch\run_simu_FUT_N200.sas
+* PoissonF\Simulation study\Follow-up time batch\run_simu_EX_ncov2.sas
+* PoissonF\Simulation study\Follow-up time batch\run_simu_EX_ncov5.sas
+* PoissonF\Simulation study\Follow-up time batch\run_simu_EX_ncov10.sas
 
-Githubpath is the path to the code and to the place where results files will be stored (in csv format)
-Localpath is the path to a folder where SAS results files will be stored (in sas7bdat format)
+Githubpath is the path to the code and to the place where results files will be stored (in csv format),
+Localpath is the path to a folder where SAS results files will be stored (in sas7bdat format).
 
 ## 2. Run R program to generate data
 
