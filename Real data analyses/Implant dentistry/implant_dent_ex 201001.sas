@@ -1,8 +1,8 @@
-%include "E:\1Projects\2018-08 NegBinom FC\Github\PoissonF\Simulation study\Sas macro\flacpoisson.sas";
-%include "E:\1Projects\2018-08 NegBinom FC\Github\PoissonF\Simulation study\Sas macro\dataugpoisson.sas";
+%include "D:\1Projects\2018-08 NegBinom FC\Github\PoissonF\Simulation study\Sas macro\flacpoisson.sas";
+%include "D:\1Projects\2018-08 NegBinom FC\Github\PoissonF\Simulation study\Sas macro\dataugpoisson.sas";
 
 PROC IMPORT OUT= WORK.dataset 
-            DATAFILE= "C:\Users\Biometrikus\ownCloud\Documents\Medizin\K
+            DATAFILE= "D:\1Medizin\K
 uchler Zahnklinik\Prediction of complications\dataSet.csv" 
             DBMS=CSV REPLACE;
      GETNAMES=YES;
@@ -86,7 +86,9 @@ run;
 *** data augmentation prior (prior interval for IRR e.g. 1/100, 100);
 
 
-%dataugpoisson(varlist=a b c d, priorinterval=5 10 50 100 500 1000, printprior=1);
+%dataugpoisson(varlist=a b c d, priorinterval=1.05 1.1 5 10, printprior=1);
+
+%dataugpoisson(data=dataset_m, y=comphema_n, offset=log_nimpl, varlist=FactAge_cent_dec FactSmoke_O2  FactSmoke_O3 FactDM_D, priorinterval=100  1000, S=25);
 
 %dataugpoisson(data=dataset_m, y=comphema_n, offset=log_nimpl, varlist=FactAge_cent_dec FactSmoke_O2  FactSmoke_O3 FactDM_D, priorinterval=100 1000);
 
