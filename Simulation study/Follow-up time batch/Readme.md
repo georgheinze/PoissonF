@@ -16,10 +16,9 @@ Localpath is the path to a folder where SAS results files will be stored (in sas
 
 ## 2. Run R program to generate data
 
-Run PoissonF\Simulation study\Follow-up time batch\FIRTHPoisson_simulatoR_FUT_Rev4.r. 
+Run PoissonF\Simulation study\Follow-up time batch\FIRTHPoisson_simulatoR_FUT_Rev4.r. This code references to the 'simdata' R package which is available at https://github.com/matherealize/simdata.
 
-Per scenario defined by number of covariates, number of beta (1-5), and sample size it will create 1 big data set in csv format containing the simulated data sets 1-10000.
-It will also create a file with the intercepts (and beta1, beta2) iteratively found to create an event rate of approximately 0.10.
+Each scenario is defined by an approximate event rate of 0.1,  number of covariates (2, 5 or 10), beta1 (9 equidistant values from -log(16) to log(16)), and sample size (such that events per variable ratios of approximately 3, 5, and 10 result). For each of these 81 scenarios, the R program will create 1 big data set in csv format containing the simulated data sets 1-10000. It will also create a file with the intercepts (and beta1, beta2) iteratively found to create an event rate of approximately 0.10.
 
 The data sets are saved in folder 'Data'. 
 
@@ -31,7 +30,7 @@ In batch mode (right-click in explorer),
 * Run PoissonF\Simulation study\Follow-up time batch\run_simu_EX_ncov5.bat
 * Run PoissonF\Simulation study\Follow-up time batch\run_simu_EX_ncov10.bat
 
-These files will call SAS in batch mode and with Cytel PROCs configuration.
+These files will call SAS programs in batch mode and with Cytel PROCs configuration.
 
 Upon completing, they will generate .sas7bdat and .csv files with the results from PROC GENMOD for Firth, FLAC and ML methods.
 
