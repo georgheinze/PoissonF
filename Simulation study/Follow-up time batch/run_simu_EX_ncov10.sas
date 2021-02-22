@@ -6,6 +6,5 @@
 
 libname poislrci "&Localpath.PoissonF\Simulation study\Follow-up time batch\Results";
 
-%do_sim_ex(all_ncov=10, all_epv=3 5 10, all_nbeta=1 2 3 4 5 6 7 8 9); * done up to 10x10;
-*%do_sim_ex(all_ncov=10, all_epv=10, all_nbeta=1 2 3 4 5 6 7 8 9, lxpmle=0); * 10x10;
+%do_sim_ex(all_ncov=10, all_epv=3 5 10, all_nbeta=1 2 3 4 5 6 7 8 9); 
 

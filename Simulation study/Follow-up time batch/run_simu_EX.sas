@@ -58,26 +58,7 @@ options notes;
 	%mlexinportion(portions=10, nsim=10000, y_2go=y_FUT, exact=&do_exact, lxpmle=&do_lxpmle, FUT=1);
 %end;
 
-/*
-ods select none;
-proc genmod data=simdata10;
-ods output exactparmest=poislrci.EX_FUT_&ncov._&nbeta._&n.;
-model y=x1 x2/dist=poisson offset=logFU;
-exact x1/estimate cltype=exact;       ********** offset not available with exact model!
-by isim;
-run;
-ods select all;
 
-
-ods select none;
-proc genmod data=simdata10;
-ods output exactparmest=poislrci.MIDP_FUT_&ncov._&nbeta._&n.;
-model y=x1 x2/dist=poisson offset=logFU;
-exact x1/estimate cltype=midp;********** offset not available with exact model!
-by isim;
-run;
-ods select all;
-*/
 
 
 
