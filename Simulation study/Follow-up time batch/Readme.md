@@ -2,9 +2,9 @@
 
 ## 1. Set github path correctly in the following files:
 
-PoissonF\Simulation study\Follow-up time batch\FIRTHPoisson_simulatoR_FUT_Rev3.r
-PoissonF\Simulation study\Follow-up time batch\run_simu_FUT_N60.sas
-PoissonF\Simulation study\Follow-up time batch\run_simu_FUT_N200.sas
+* PoissonF\Simulation study\Follow-up time batch\FIRTHPoisson_simulatoR_FUT_Rev3.r
+* PoissonF\Simulation study\Follow-up time batch\run_simu_FUT_N60.sas
+* PoissonF\Simulation study\Follow-up time batch\run_simu_FUT_N200.sas
 
 ## 2. Run R program to generate data
 
