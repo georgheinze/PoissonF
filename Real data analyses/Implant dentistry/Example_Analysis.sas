@@ -34,9 +34,14 @@ filename flacpois url 'https://raw.githubusercontent.com/georgheinze/flicflac/ma
 
 *** read data set;
 
-filename impl url 'https://raw.githubusercontent.com/georgheinze/PoissonF/master/Real data analyses/Implant dentistry/Impdent.csv';
-proc import file=impl out=work.Impdent dbms=csv replace;
+filename impdent temp;
+proc http
+url="https://raw.githubusercontent.com/georgheinze/PoissonF/master/Real data analyses/Implant dentistry/Impdent.csv" method=get out=impdent;
 run;
+
+proc import file=impdent out=work.Impdent replace dbms=csv;
+run;
+
 
 * Maximum likelihood analysis and exact Poisson regression;
 
