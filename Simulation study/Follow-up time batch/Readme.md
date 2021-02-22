@@ -47,6 +47,4 @@ to generate summary statistics like
 bias, MSE, RMSE, RMSE*sqrt(N), lower coverage, upper coverage, power. 
 These will be saved as .sas7bdat (on localpath) as well as .csv files (on Githubpath).
 
-All summaries are saved in folder 'Summaries'.
-
-The R-markdown file 'SimulationReport.Rmd' generates the full summary of the simulation study.
+All summaries are saved in folder 'Summaries'. Based on the two summary files 'PoissonF_sep_nonconv.csv' and 'PoissonFResultsTable.csv', the R-markdown file 'SimulationReport.Rmd' generates the full summary of the simulation study.
