@@ -1,5 +1,9 @@
 # Run SAS simulation
 
+## Caution
+
+The SAS simulation to be executable requires a SAS installation and folder structure similar to the one used in the original simulation study. We used SAS 9.4TS1M7 with Cytel's PROC LOGXACT. The simulation study was carried out in portions and required several weeks to complete.
+
 ## 1. Set paths correctly in the following files:
 
 * PoissonF\Simulation study\Follow-up time batch\FIRTHPoisson_simulatoR_FUT_Rev4.r
