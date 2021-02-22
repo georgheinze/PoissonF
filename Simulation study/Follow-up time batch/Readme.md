@@ -11,8 +11,8 @@ The SAS simulation to be executable requires a SAS installation and folder struc
 * PoissonF\Simulation study\Follow-up time batch\run_simu_EX_ncov5.sas
 * PoissonF\Simulation study\Follow-up time batch\run_simu_EX_ncov10.sas
 
-*Githubpath* is the path to the code and to the place where results files will be stored (in csv format),
-*Localpath* is the path to a folder where SAS results files will be stored (in sas7bdat format).
+*Githubpath* is the path to where the code available in this repository is cloned to and to the place where results files will be stored (in csv format),
+*Localpath* is the path to a folder where SAS results files will be stored (in sas7bdat format). *Don't push the resulting csv files back to github as the required space is excessive!*
 
 ## 2. Run R program to generate data
 
